@@ -1,5 +1,10 @@
 import java.security.SecureRandom;
 
+/**
+ * The SHA3SHAKE class will enable users to securely hash data, extract hash
+ * values, and customize the hashing process according to their specific
+ * requirements.
+ */
 public class SHA3SHAKE {
 
     private final SecureRandom random = new SecureRandom();
