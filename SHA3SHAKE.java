@@ -47,7 +47,9 @@ public class SHA3SHAKE {
      * The input message is divided into blocks (based on the rate r).
      * 
      * Each block is XORed with the first r bits of the state array (the rest of the
-     * state, c bits, is untouched during this phase).
+     * state, c bits, is untouched during this phase). This is done to inject the
+     * input data into the state, effectively combining the message with the current
+     * internal state through XOR.
      * 
      * After XORing, the entire state array undergoes a permutation process that
      * shuffles the bits around in a complex but deterministic way.
