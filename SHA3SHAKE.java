@@ -7,7 +7,23 @@ import java.security.SecureRandom;
  */
 public class SHA3SHAKE {
 
+    /**
+     * A cryptographically secure random number generator.
+     */
     private final SecureRandom random = new SecureRandom();
+
+    /**
+     * The state array in KECCAK is a 1600-bit (5x5x64) matrix that serves as the
+     * core structure for the algorithm's operations. It is used to store
+     * intermediate values during the absorbing (input) and squeezing (output)
+     * phases and undergoes multiple permutations to ensure security.
+     * 
+     * Should this be a 1D array of 1600?
+     * Should it be 5 x 5 x w, where w is given later during initialization?
+     */
+    private final byte[][][] stateArray = new byte[5][5][64];
+
+    // Other important data structures and parameters...
 
     public SHA3SHAKE() {
     }
@@ -21,8 +37,21 @@ public class SHA3SHAKE {
      *               level = suffix)
      */
     public void init(int suffix) {
-        /* … */
+
+        // State array: starts as a 1600-bit block initialized to all zeros.
     }
+
+    /*
+     * ------------------- Absorbing Phase -------------------
+     * 
+     * The input message is divided into blocks (based on the rate r).
+     * 
+     * Each block is XORed with the first r bits of the state array (the rest of the
+     * state, c bits, is untouched during this phase).
+     * 
+     * After XORing, the entire state array undergoes a permutation process that
+     * shuffles the bits around in a complex but deterministic way.
+     */
 
     /**
      * Update the SHAKE sponge with a byte-oriented data chunk.
@@ -54,6 +83,21 @@ public class SHA3SHAKE {
         /* … */
     }
 
+    /*
+     * ------------------- Squeezing Phase -------------------
+     * 
+     * Once all the input data is absorbed, the squeezing phase starts.
+     * 
+     * In this phase, the algorithm takes the first r bits from the state array as
+     * part of the output.
+     * 
+     * The permutation function is applied again to the state, and another r bits
+     * are taken.
+     * 
+     * This process continues until the desired output length (hash size) is
+     * reached.
+     */
+
     /**
      * Squeeze a chunk of hashed bytes from the sponge.
      * Call this method as many times as needed to extract the total desired number
@@ -82,6 +126,13 @@ public class SHA3SHAKE {
 
         return new byte[] { 0 };
     }
+
+    /*
+     * ------------------- Digesting Phase -------------------
+     * 
+     * TODO: write description here
+     * 
+     */
 
     /**
      * Squeeze a whole SHA-3 digest of hashed bytes from the sponge.
