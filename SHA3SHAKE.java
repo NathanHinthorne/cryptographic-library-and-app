@@ -1,4 +1,9 @@
+import java.security.SecureRandom;
+
 public class SHA3SHAKE {
+
+    private final SecureRandom random = new SecureRandom();
+
     public SHA3SHAKE() {
     }
 
