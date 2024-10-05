@@ -18,7 +18,9 @@ public class SHA3SHAKE {
      * intermediate values during the absorbing (input) and squeezing (output)
      * phases and undergoes multiple permutations to ensure security.
      * 
-     * Should this be a 1D array of 1600?
+     * The state array (in matrix form) is what's used internally to shape the
+     * output. The output itself will convert the matrix into a 1D byte array.
+     * 
      * Should it be 5 x 5 x w, where w is given later during initialization?
      */
     private final byte[][][] stateArray = new byte[5][5][64];
@@ -132,7 +134,9 @@ public class SHA3SHAKE {
     /*
      * ------------------- Digesting Phase -------------------
      * 
-     * TODO: write description here
+     * The digesting phase is where the bulk of the algorithm operations occur.
+     * After absorbing the input data, the Keccak state undergoes multiple rounds of
+     * transformation via the five mapping functions (θ, ρ, π, χ, ι)
      * 
      */
 
