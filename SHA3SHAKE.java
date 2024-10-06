@@ -325,7 +325,7 @@ public class SHA3SHAKE {
             for (int z = 0; z < w; z++) {
                 // we use % to ensure it's cyclical
                 boolean c1 = C[(x - 1) % 5][z];
-                boolean c2 = C[(x + 1) % 5][(z - 1) % 5];
+                boolean c2 = C[(x + 1) % 5][(z - 1) % w];
                 D[x][z] = c1 ^ c2;
             }
         }
