@@ -5,8 +5,9 @@ import java.security.SecureRandom;
  * values, and customize the hashing process according to their specific
  * requirements.
  * 
- * Note: The ^ operator is XOR and is short for (~p ^ q) v (p ^ ~q) in logic
- * notation.
+ * Note: This implementaton of SHA3SHAKE uses booleans to represent bits. This
+ * makes the code easier to read and understand, but results in slower
+ * performance.
  */
 public class SHA3SHAKE {
 
@@ -69,8 +70,13 @@ public class SHA3SHAKE {
      */
     public void init(int suffix) {
 
-        // State matrix: starts as a 1600-bit block initialized to all zeros.
+        // Do the sponge construction algorithm here.
     }
+
+    /*
+     * Note: The ^ operator is XOR and is short for (~p ^ q) v (p ^ ~q) in logic
+     * notation.
+     */
 
     /*
      * ------------------- Absorbing Phase -------------------
@@ -167,9 +173,9 @@ public class SHA3SHAKE {
     }
 
     /*
-     * ------------------- Digesting Phase -------------------
+     * ------------------- Digesting -------------------
      * 
-     * Digesting isn't so much a phase as it is the final step of the algorithm.
+     * Digesting is the final step of the algorithm.
      * It will use the squeezing phase to extract the final hash value.
      */
 
@@ -197,21 +203,6 @@ public class SHA3SHAKE {
     }
 
     // helper functions
-
-    /**
-     * XOR two byte arrays.
-     * 
-     * @param a The first byte array
-     * @param b The second byte array
-     * @return The XORed byte array
-     */
-    private byte[] xor(byte[] a, byte[] b) {
-        byte[] result = new byte[a.length];
-        for (int i = 0; i < a.length; i++) {
-            result[i] = (byte) (a[i] ^ b[i]);
-        }
-        return result;
-    }
 
     /**
      * Convert 3D matrix of bits to a byte array.
@@ -282,6 +273,9 @@ public class SHA3SHAKE {
      * 
      * Effect: Theta ensures that each bit is affected by the bits of every column,
      * propagating local changes across the entire state.
+     * 
+     * @param stateMatrix 3D matrix of bits
+     * @return 3D matrix of bits
      */
     private boolean[][][] stepMapTheta(boolean[][][] stateMatrix) {
         boolean[][][] newStateMatrix = stateMatrix;
@@ -289,9 +283,38 @@ public class SHA3SHAKE {
         // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
         // in java.
 
+        boolean[][] C = new boolean[5][w];
+        boolean[][] D = new boolean[5][w];
+
+        // step 1: XOR every bit in a column -> get result C
+        // find every C
         for (int x = 0; x < 5; x++) {
             for (int z = 0; z < w; z++) {
+                for (int y = 0; y < 5; y++) {
+                    C[x][z] = stateMatrix[z][y][x] ^ C[x][z];
+                }
+            }
+        }
 
+        // step 2: for each C, XOR the C of nearby columns (x-1, z) and (x+1, z-1) with
+        // each other -> get result D
+        // find every D
+        for (int x = 0; x < 5; x++) {
+            for (int z = 0; z < w; z++) {
+                // we use % to ensure it's cyclical
+                boolean c1 = C[(x - 1) % 5][z];
+                boolean c2 = C[(x + 1) % 5][(z - 1) % 5];
+                D[x][z] = c1 ^ c2;
+            }
+        }
+
+        // step 3: for every bit in matrix, XOR it with the D of the column it's in ->
+        // get result newStateMatrix
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 5; y++) {
+                for (int z = 0; z < w; z++) {
+                    newStateMatrix[z][y][x] = stateMatrix[z][y][x] ^ D[x][z];
+                }
             }
         }
 
@@ -379,8 +402,10 @@ public class SHA3SHAKE {
          */
 
         // This utility method will act like a controller.
+
         // We'll need to create a new instance of SHA3SHAKE here with specific
         // parameters here.
+        SHA3SHAKE sha3 = new SHA3SHAKE();
 
         return new byte[] { 0 };
     }
@@ -405,8 +430,10 @@ public class SHA3SHAKE {
          */
 
         // This utility method will act like a controller.
+
         // We'll need to create a new instance of SHA3SHAKE here with specific
         // parameters here.
+        SHA3SHAKE shake = new SHA3SHAKE();
 
         return new byte[] { 0 };
     }
