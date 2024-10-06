@@ -18,9 +18,9 @@ public class Main {
             System.out.println();
 
             if (hashOption.equals("1")) {
-                // walk user through stages of absorb, squeeze, and digest
                 final SHA3SHAKE sha3shake = new SHA3SHAKE();
 
+                // walk user through initialization
                 System.out.println("Please enter your message:");
                 String message = scanner.next();
                 System.out.println();
@@ -45,6 +45,7 @@ public class Main {
                     // initialize the SHA-3/SHAKE sponge
 
                 }
+                // walk user through stages of absorb, squeeze, and digest
             }
 
             else if (hashOption.equals("2")) {
