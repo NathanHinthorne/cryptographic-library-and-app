@@ -211,11 +211,34 @@ public class SHA3SHAKE {
      * @return byte array
      */
     private byte[] convertToByteString(boolean[][][] stateMatrix) {
-        return new byte[] { 0 };
+        int byteStringLength = (5 * 5 * w) / 8; // 1 byte = 8 bits
+        byte[] byteString = new byte[byteStringLength];
+
+        return byteString;
     }
 
     private boolean[][][] convertToBooleanMatrix(byte[] byteString) {
-        return new boolean[5][5][64];
+        boolean[][][] stateMatrix = new boolean[5][5][w];
+
+        // real formula is: A[x, y, z] = S[w(5y + x) + z]
+        // but we need to grab 8-bit chunks (lane sections)
+
+        for (int y = 0; y < 5; y++) {
+            for (int x = 0; x < 5; x++) { // seems out of place, but x should increase before y
+                for (int z = 0; z < w; z += 8) {
+                    byte laneSection = byteString[w * ((5 * y) + x) + z];
+                    // Iterate over each bit position (0 to 7)
+                    for (int i = 0; i < 8; i++) {
+                        // Extract the bit at position i (from right to left)
+                        // use a bitmask to accomplish this
+                        // 0 = false, 1 = true
+                        stateMatrix[z + i][y][x] = (laneSection & (1 << i)) != 0;
+                    }
+                }
+            }
+        }
+
+        return stateMatrix;
     }
 
     private void printStateMatrix(boolean[][][] stateMatrix) {
@@ -271,14 +294,13 @@ public class SHA3SHAKE {
      * creating diffusion across the rows and columns. It applies a parity check
      * across columns of the 5x5 matrix of slices in the state.
      * 
-     * Effect: Theta ensures that each bit is affected by the bits of every column,
+     * Effect: Ensures that each bit is affected by the bits of every column,
      * propagating local changes across the entire state.
      * 
      * @param stateMatrix 3D matrix of bits
      * @return 3D matrix of bits
      */
     private boolean[][][] stepMapTheta(boolean[][][] stateMatrix) {
-        boolean[][][] newStateMatrix = stateMatrix;
 
         // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
         // in java.
@@ -310,6 +332,7 @@ public class SHA3SHAKE {
 
         // step 3: for every bit in matrix, XOR it with the D of the column it's in ->
         // get result newStateMatrix
+        boolean[][][] newStateMatrix = stateMatrix;
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 for (int z = 0; z < w; z++) {
@@ -327,21 +350,22 @@ public class SHA3SHAKE {
      * Functionality: Rotates the bits of each lane (individual segments of the
      * state matrix) by a position-dependent number of steps.
      * 
-     * Effect: This step provides non-linearity by rotating bits in different ways
-     * for each lane, contributing to the complexity of the hash.
+     * Effect: Provides non-linearity by rotating bits in different ways
+     * for each lane.
      */
     private void stepMapRho() {
         // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
         // in java.
+
     }
 
     /**
      * Pi (π) - Transposition (Permutation).
      * 
-     * Functionality: This step rearranges the positions of the bits within the
+     * Functionality: Rearranges the positions of the bits within the
      * 3D state matrix.
      * 
-     * Effect: Pi ensures that bits are mixed across different lanes.
+     * Effect: Ensures that bits are mixed across different lanes.
      */
     private void stepMapPi() {
         // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
@@ -351,10 +375,10 @@ public class SHA3SHAKE {
     /**
      * Chi (χ) - Nonlinear Mixing.
      * 
-     * Functionality: It introduces non-linearity into the state by XORing each bit
-     * with a combination of other bits in the same row.
+     * Functionality: XORs each bit with a combination of other bits in the same
+     * row.
      * 
-     * Effect: Chi introduces non-linearity, which is critical for creating a
+     * Effect: Introduces non-linearity, which is critical for creating a
      * secure cryptographic transformation that resists linear attacks.
      */
     private void stepMapChi() {
@@ -365,10 +389,10 @@ public class SHA3SHAKE {
     /**
      * Iota (ι) - Round Constant Addition.
      * 
-     * Functionality: This step injects a round-dependent constant into the state to
+     * Functionality: Injects a round-dependent constant into the state to
      * break symmetry and ensure that each round is different.
      * 
-     * Effect: Iota ensures that the permutations applied in each round differ,
+     * Effect: Ensures that the permutations applied in each round differ,
      * preventing any symmetry or structure from weakening the hash function.
      */
     private void stepMapIota() {
