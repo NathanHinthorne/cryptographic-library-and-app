@@ -169,10 +169,8 @@ public class SHA3SHAKE {
     /*
      * ------------------- Digesting Phase -------------------
      * 
-     * The digesting phase is where the bulk of the algorithm operations occur.
-     * After absorbing the input data, the Keccak state undergoes multiple rounds of
-     * transformation via the five mapping functions (θ, ρ, π, χ, ι)
-     * 
+     * Digesting isn't so much a phase as it is the final step of the algorithm.
+     * It will use the squeezing phase to extract the final hash value.
      */
 
     /**
