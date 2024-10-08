@@ -56,6 +56,21 @@ public class SHA3SHAKE {
      */
     private int d;
 
+    /**
+     * The input string to a SHA-3 hash or XOF function.
+     */
+    private String M = "";
+
+    /**
+     * The input string of the sponge.
+     */
+    private String N = "";
+
+    /**
+     * [add description for P]
+     */
+    private String P = "";
+
     public SHA3SHAKE() {
     }
 
@@ -71,6 +86,31 @@ public class SHA3SHAKE {
     public void init(int suffix) {
 
         // Do the sponge construction algorithm here.
+
+        /*
+         * Steps:
+         * 
+         * 1. Let P=N || pad(r, len(N)).
+         * 
+         * 2. Let n=len(P)/r.
+         * 
+         * 3. Let c=b-r.
+         * 
+         * 4. Split P into n blocks of length r.
+         * 
+         * 5. Let S=0^b.
+         * 
+         * 6. For i=0 to n-1: S=f(S ⊕ (P[i] ⊕ 0^c)).
+         * 
+         * 7. Let Z be the empty string.
+         * 
+         * 8. Let Z=Z || Trunc_r(S).
+         * 
+         * 9. If d≤|Z|, then return Trunc_d(Z); else continue.
+         * 
+         * Let S=f(S), and continue with Step 8.
+         */
+
     }
 
     /*
@@ -211,8 +251,25 @@ public class SHA3SHAKE {
      * @return byte array
      */
     private byte[] convertToByteString(boolean[][][] stateMatrix) {
-        int byteStringLength = (5 * 5 * w) / 8; // 1 byte = 8 bits
+
+        // SAVE FOR TRAE!!!!!!!!!!!!!!!!!!!!!!!!
+
+        // int byteStringLength = (5 * 5 * w) / 8; // 1 byte = 8 bits
         byte[] byteString = new byte[byteStringLength];
+
+        // // combine each lane
+        // for (int y = 0; y < 5; y++) {
+        // for (int x = 0; x < 5; x++) { // seems out of place, but x should increase
+        // before y
+        // for (int z = 0, counter = 0; z < w; z += 8, counter++) {
+        // // convert 8 sequential booleans to a byte
+        // // 0 = false, 1 = true
+        // if (stateMatrix[y][x][z]) {
+        // byteString[counter] |= (byte) 1 << (7 - (z % 8));
+        // }
+        // }
+        // }
+        // }
 
         return byteString;
     }
