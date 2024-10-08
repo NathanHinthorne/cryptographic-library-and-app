@@ -1,3 +1,4 @@
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 
 /**
@@ -28,7 +29,7 @@ public class SHA3SHAKE {
      * 
      * Should it be 5 x 5 x w, where w is given later during initialization?
      */
-    private final boolean[][][] stateMatrix = new boolean[5][5][64];
+    private final long[][] stateMatrix = new long[5][5];
 
     /**
      * The length of the z axis long the state matrix (aka the length of a lane).
@@ -250,47 +251,33 @@ public class SHA3SHAKE {
      * @param stateMatrix 3D matrix of bits
      * @return byte array
      */
-    private byte[] convertToByteString(boolean[][][] stateMatrix) {
+    private byte[] stateMatrixToByteString(long[][] stateMatrix) {
+        byte[] byteString = new byte[200]; // Need 1,600 bits. 8 bits per byte.
 
-        // SAVE FOR TRAE!!!!!!!!!!!!!!!!!!!!!!!!
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 5; y++) {
+                long lane = stateMatrix[x][y];
 
-        // int byteStringLength = (5 * 5 * w) / 8; // 1 byte = 8 bits
-        byte[] byteString = new byte[byteStringLength];
-
-        // // combine each lane
-        // for (int y = 0; y < 5; y++) {
-        // for (int x = 0; x < 5; x++) { // seems out of place, but x should increase
-        // before y
-        // for (int z = 0, counter = 0; z < w; z += 8, counter++) {
-        // // convert 8 sequential booleans to a byte
-        // // 0 = false, 1 = true
-        // if (stateMatrix[y][x][z]) {
-        // byteString[counter] |= (byte) 1 << (7 - (z % 8));
-        // }
-        // }
-        // }
-        // }
+                // convert each long into an array of bytes with byte buffer
+                buffer.putLong(lane);
+            }
+        }
+        byteString = buffer.array();
 
         return byteString;
     }
 
-    private boolean[][][] convertToBooleanMatrix(byte[] byteString) {
-        boolean[][][] stateMatrix = new boolean[5][5][w];
+    private long[][] byteStringToStateMatrix(byte[] byteString) {
+        long[][] stateMatrix = new long[5][5];
 
         // real formula is: A[x, y, z] = S[w(5y + x) + z]
         // but we need to grab 8-bit chunks (lane sections)
 
-        for (int y = 0; y < 5; y++) {
-            for (int x = 0; x < 5; x++) { // seems out of place, but x should increase before y
-                for (int z = 0; z < w; z += 8) {
-                    byte laneSection = byteString[w * ((5 * y) + x) + z];
-                    // Iterate over each bit position (0 to 7)
-                    for (int i = 0; i < 8; i++) {
-                        // Extract the bit at position i (from right to left)
-                        // use a bitmask to accomplish this
-                        // 0 = false, 1 = true
-                        stateMatrix[z + i][y][x] = (laneSection & (1 << i)) != 0;
-                    }
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 5; y++) {
+                for (int z = 0; z < 8; z++) {
+                    stateMatrix[x][y] = byteString[8 * (5 * y + x) + z] << z * 8;
                 }
             }
         }
@@ -298,23 +285,11 @@ public class SHA3SHAKE {
         return stateMatrix;
     }
 
-    private void printStateMatrix(boolean[][][] stateMatrix) {
+    private void printStateMatrix(long[][] stateMatrix) {
         // Print the state matrix for debugging purposes
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                System.out.print("Layer " + i + ", lane " + j + ": ");
-                for (int k = 0; k < 64; k++) {
-                    boolean bit = stateMatrix[i][j][k];
-                    System.out.print(bit ? "1" : "0");
-                    if ((k + 1) % 8 == 0) {
-                        System.out.print(" ");
-                    }
-                    if ((j + 1) % 5 == 0) {
-                        System.out.println();
-                    }
-                    System.out.println();
-                }
-                System.out.println();
+                System.out.println(Integer.toBinaryString((int) stateMatrix[i][j]));
             }
         }
     }
@@ -357,7 +332,7 @@ public class SHA3SHAKE {
      * @param stateMatrix 3D matrix of bits
      * @return 3D matrix of bits
      */
-    private boolean[][][] stepMapTheta(boolean[][][] stateMatrix) {
+    private long[][] stepMapTheta(long[][] stateMatrix) {
 
         // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
         // in java.
@@ -389,7 +364,7 @@ public class SHA3SHAKE {
 
         // step 3: for every bit in matrix, XOR it with the D of the column it's in ->
         // get result newStateMatrix
-        boolean[][][] newStateMatrix = stateMatrix;
+        long[][] newStateMatrix = stateMatrix;
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 for (int z = 0; z < w; z++) {
