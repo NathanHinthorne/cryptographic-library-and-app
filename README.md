@@ -1,6 +1,6 @@
 # Cryptographic library and app
 
-A SHA-3/SHAKE cryptographic library and a command lineapp to test the library. Uses specifications found in https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf.
+A SHA-3/SHAKE cryptographic library and a command line app to test the library. It can utilize all the cryptographic algorithms that fall under the category of symmetric. Uses specifications found in https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf.
 
 ## Understanding the algorithm (contribute to this section how you see fit)
 
