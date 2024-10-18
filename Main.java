@@ -18,7 +18,7 @@ public class Main {
             System.out.println();
 
             if (hashOption.equals("1")) {
-                final SHA3SHAKE sha3shake = new SHA3SHAKE();
+                final SHA3SHAKE customSponge = new SHA3SHAKE();
 
                 // walk user through initialization
                 System.out.println("Please enter your message:");
