@@ -447,10 +447,16 @@ public class SHA3SHAKE {
             for (int y = 0; y < 5; y++) {
 
                 // Step 2: XOR neighboring columns
-                resultLaneD[x] =
+                long neighborLane1 = resultLaneC[(x - 1) % 5];
 
-                        // Step 3: XOR each bit with resultLaneD
-                        newStateMatrix[x][y] = stateMatrix[x][y] ^ resultLaneD[x];
+                long lastBit = (resultLaneC[(x + 1) % 5] & 1) << 63;
+                long remainingBits = resultLaneC[(x + 1) % 5] >> 1;
+                long neighborLane2 = remainingBits | lastBit; // bit-shift down (wrap around)
+
+                resultLaneD[x] = neighborLane1 ^ neighborLane2;
+
+                // Step 3: XOR each bit with resultLaneD
+                newStateMatrix[x][y] = stateMatrix[x][y] ^ resultLaneD[x];
             }
         }
 
