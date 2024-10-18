@@ -392,46 +392,7 @@ public class SHA3SHAKE {
      * @param stateMatrix 3D matrix of bits
      * @return 3D matrix of bits
      */
-    // private long[][] stepMapTheta(long[][] stateMatrix) {
-
-    // // step 1: XOR every bit in a column -> get result C
-    // long resultLaneC = 0;
-    // for (int x = 0; x < 5; x++) {
-    // for (int y = 0; y < 5; y++) {
-    // // batch XOR lane-by-lane
-    // resultLaneC ^= stateMatrix[x][y];
-    // }
-    // }
-    // System.out.println("resultLaneC = " + Long.toHexString(resultLaneC));
-
-    // // step 2: for each C, XOR the C of nearby columns (x-1, z) and (x+1, z-1)
-    // with
-    // // each other -> get result D
-    // // NOTE: wrap around with mod 5
-
-    // // For all pairs (x, z) such that 0 ≤ x < 5 and 0 ≤ z < w let
-    // // D[x,z] = C[(x-1) mod 5, z] xor C[(x+1) mod 5, (z-1) mod w]
-
-    // long resultLaneD = 0;
-    // for (int x = 0; x < 5; x++) {
-    // for (int y = 0; y < 5; y++) {
-    // // batch XOR lane-by-lane
-    // resultLaneD ^= stateMatrix[(x - 1) % 5][y];
-    // resultLaneD ^= stateMatrix[(x + 1) % 5][(y - 1) % 5];
-    // }
-    // }
-    // System.out.println("resultLaneD = " + Long.toHexString(resultLaneD));
-
-    // // step 3: for every bit in matrix, XOR it with the D of the column it's in
-    // ->
-    // // get result newStateMatrix
-    // long[][] newStateMatrix = stateMatrix;
-
-    // return newStateMatrix;
-    // }
-
-    // option #2
-    private long[][] stepMapTheta(long[][] stateMatrix) {
+    public long[][] stepMapTheta(long[][] stateMatrix) {
 
         long[][] newStateMatrix = new long[5][5];
 
@@ -446,7 +407,7 @@ public class SHA3SHAKE {
 
             for (int y = 0; y < 5; y++) {
 
-                // Step 2: XOR neighboring columns
+                // Step 2: XOR neighboring columns (x-1, z) and (x+1, z-1)
                 long neighborLane1 = resultLaneC[(x - 1) % 5];
 
                 long lastBit = (resultLaneC[(x + 1) % 5] & 1) << 63;
