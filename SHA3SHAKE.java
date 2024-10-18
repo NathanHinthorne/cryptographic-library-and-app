@@ -26,10 +26,8 @@ public class SHA3SHAKE {
      * phases and undergoes multiple permutations to ensure security.
      * 
      * The information in it is converted from a byte string.
-     * 
-     * Should it be 5 x 5 x w, where w is given later during initialization?
      */
-    private final long[][] stateMatrix = new long[5][5];
+    private long[][] stateMatrix = new long[5][5];
 
     /**
      * The length of the z axis long the state matrix (aka the length of a lane).
@@ -85,6 +83,40 @@ public class SHA3SHAKE {
      *               level = suffix)
      */
     public void init(int suffix) {
+
+        // DEMO DATA
+        // 5x5 matrix of longs (given in hex format)
+        stateMatrix = new long[][] {
+                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
+                        0x4440000000000000L, 0x9990000000000000L },
+
+                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
+                        0x4440000000000000L, 0x5550000000000000L },
+
+                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
+                        0x4440000000000000L, 0x5550000000000000L },
+
+                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
+                        0x4440000000000000L, 0x5550000000000000L },
+
+                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
+                        0x4440000000000000L, 0x5550000000000000L } };
+
+        System.out.println("State Matrix:");
+        printStateMatrix(stateMatrix);
+
+        System.out.println("\nByte String:");
+        byte[] byteArray = stateMatrixToByteString(stateMatrix);
+        int byteCount = 0;
+        for (int i = 0; i < byteArray.length; i++) {
+            System.out.print(byteArray[i] + " ");
+
+            // every 8 bytes, print a new line
+            if (byteCount % 8 == 7) {
+                System.out.println();
+            }
+            byteCount++;
+        }
 
         // Do the sponge construction algorithm here.
 
@@ -246,33 +278,60 @@ public class SHA3SHAKE {
     // helper functions
 
     /**
-     * Convert 3D matrix of bits to a byte array.
+     * Flatten a 5x5 matrix of longs into a linear byte array.
      * 
-     * @param stateMatrix 3D matrix of bits
+     * @param stateMatrix 2D array of longs
      * @return byte array
      */
     private byte[] stateMatrixToByteString(long[][] stateMatrix) {
         byte[] byteString = new byte[200]; // Need 1,600 bits. 8 bits per byte.
 
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        int byteStringIndex = 0;
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 long lane = stateMatrix[x][y];
 
-                // convert each long into an array of bytes with byte buffer
+                // Reset the buffer's position to zero before putting a new long value
+                buffer.clear();
                 buffer.putLong(lane);
+                buffer.flip(); // Prepare the buffer for reading
+
+                // Copy the bytes from the buffer to the byteString array
+                byte[] destArray = new byte[Long.BYTES];
+                buffer.get(destArray);
+                System.arraycopy(destArray, 0, byteString, byteStringIndex, Long.BYTES);
+                byteStringIndex += Long.BYTES;
             }
         }
-        byteString = buffer.array();
 
         return byteString;
     }
+
+    // option #2
+    // private byte[] stateMatrixToByteString(long[][] stateMatrix) {
+    // byte[] byteString = new byte[200]; // Need 1,600 bits. 8 bits per byte.
+    // int byteStringIndex = 0;
+
+    // for (int x = 0; x < 5; x++) {
+    // for (int y = 0; y < 5; y++) {
+    // long lane = stateMatrix[x][y];
+
+    // // Convert the long value to bytes and copy to the byteString array
+    // for (int i = 0; i < Long.BYTES; i++) {
+    // byteString[byteStringIndex] = (byte) (lane >>> (i * 8));
+    // byteStringIndex++;
+    // }
+    // }
+    // }
+
+    // return byteString;
+    // }
 
     private long[][] byteStringToStateMatrix(byte[] byteString) {
         long[][] stateMatrix = new long[5][5];
 
         // real formula is: A[x, y, z] = S[w(5y + x) + z]
-        // but we need to grab 8-bit chunks (lane sections)
 
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
@@ -289,7 +348,8 @@ public class SHA3SHAKE {
         // Print the state matrix for debugging purposes
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                System.out.println(Integer.toBinaryString((int) stateMatrix[i][j]));
+                // convert each long into hex to visualize better
+                System.out.println("stateMatrix[" + i + "][" + j + "] = " + Long.toHexString(stateMatrix[i][j]));
             }
         }
     }
@@ -332,44 +392,65 @@ public class SHA3SHAKE {
      * @param stateMatrix 3D matrix of bits
      * @return 3D matrix of bits
      */
+    // private long[][] stepMapTheta(long[][] stateMatrix) {
+
+    // // step 1: XOR every bit in a column -> get result C
+    // long resultLaneC = 0;
+    // for (int x = 0; x < 5; x++) {
+    // for (int y = 0; y < 5; y++) {
+    // // batch XOR lane-by-lane
+    // resultLaneC ^= stateMatrix[x][y];
+    // }
+    // }
+    // System.out.println("resultLaneC = " + Long.toHexString(resultLaneC));
+
+    // // step 2: for each C, XOR the C of nearby columns (x-1, z) and (x+1, z-1)
+    // with
+    // // each other -> get result D
+    // // NOTE: wrap around with mod 5
+
+    // // For all pairs (x, z) such that 0 ≤ x < 5 and 0 ≤ z < w let
+    // // D[x,z] = C[(x-1) mod 5, z] xor C[(x+1) mod 5, (z-1) mod w]
+
+    // long resultLaneD = 0;
+    // for (int x = 0; x < 5; x++) {
+    // for (int y = 0; y < 5; y++) {
+    // // batch XOR lane-by-lane
+    // resultLaneD ^= stateMatrix[(x - 1) % 5][y];
+    // resultLaneD ^= stateMatrix[(x + 1) % 5][(y - 1) % 5];
+    // }
+    // }
+    // System.out.println("resultLaneD = " + Long.toHexString(resultLaneD));
+
+    // // step 3: for every bit in matrix, XOR it with the D of the column it's in
+    // ->
+    // // get result newStateMatrix
+    // long[][] newStateMatrix = stateMatrix;
+
+    // return newStateMatrix;
+    // }
+
+    // option #2
     private long[][] stepMapTheta(long[][] stateMatrix) {
 
-        // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
-        // in java.
+        long[][] newStateMatrix = new long[5][5];
 
-        boolean[][] C = new boolean[5][w];
-        boolean[][] D = new boolean[5][w];
+        long[] resultLaneC = new long[5]; // lanes for each x
+        long[] resultLaneD = new long[5]; // lanes for each x
 
-        // step 1: XOR every bit in a column -> get result C
-        // find every C
         for (int x = 0; x < 5; x++) {
-            for (int z = 0; z < w; z++) {
-                for (int y = 0; y < 5; y++) {
-                    C[x][z] = stateMatrix[z][y][x] ^ C[x][z];
-                }
-            }
-        }
-
-        // step 2: for each C, XOR the C of nearby columns (x-1, z) and (x+1, z-1) with
-        // each other -> get result D
-        // find every D
-        for (int x = 0; x < 5; x++) {
-            for (int z = 0; z < w; z++) {
-                // we use % to ensure it's cyclical
-                boolean c1 = C[(x - 1) % 5][z];
-                boolean c2 = C[(x + 1) % 5][(z - 1) % w];
-                D[x][z] = c1 ^ c2;
-            }
-        }
-
-        // step 3: for every bit in matrix, XOR it with the D of the column it's in ->
-        // get result newStateMatrix
-        long[][] newStateMatrix = stateMatrix;
-        for (int x = 0; x < 5; x++) {
+            // Step 1: XOR every bit in a column
             for (int y = 0; y < 5; y++) {
-                for (int z = 0; z < w; z++) {
-                    newStateMatrix[z][y][x] = stateMatrix[z][y][x] ^ D[x][z];
-                }
+                resultLaneC[x] ^= stateMatrix[x][y];
+            }
+
+            for (int y = 0; y < 5; y++) {
+
+                // Step 2: XOR neighboring columns
+                resultLaneD[x] =
+
+                        // Step 3: XOR each bit with resultLaneD
+                        newStateMatrix[x][y] = stateMatrix[x][y] ^ resultLaneD[x];
             }
         }
 
@@ -386,8 +467,6 @@ public class SHA3SHAKE {
      * for each lane.
      */
     private void stepMapRho() {
-        // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
-        // in java.
 
     }
 
@@ -400,8 +479,6 @@ public class SHA3SHAKE {
      * Effect: Ensures that bits are mixed across different lanes.
      */
     private void stepMapPi() {
-        // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
-        // in java.
     }
 
     /**
@@ -414,8 +491,6 @@ public class SHA3SHAKE {
      * secure cryptographic transformation that resists linear attacks.
      */
     private void stepMapChi() {
-        // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
-        // in java.
     }
 
     /**
@@ -428,8 +503,6 @@ public class SHA3SHAKE {
      * preventing any symmetry or structure from weakening the hash function.
      */
     private void stepMapIota() {
-        // NOTE: Matrix A[x, y, z] from the paper will need to be written as A[z][y][x]
-        // in java.
     }
 
     /*
