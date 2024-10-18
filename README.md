@@ -2,6 +2,11 @@
 
 A SHA-3/SHAKE cryptographic library and a command line app to test the library. It can utilize all the cryptographic algorithms that fall under the category of symmetric. Uses specifications found in https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf.
 
+## BEFORE SUBMITTING
+
+- Remove junit
+- Remove test class
+
 ## Understanding the algorithm (contribute to this section how you see fit)
 
 ### What is KECCAK?
