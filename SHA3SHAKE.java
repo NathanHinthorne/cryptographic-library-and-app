@@ -344,12 +344,17 @@ public class SHA3SHAKE {
         return stateMatrix;
     }
 
-    private void printStateMatrix(long[][] stateMatrix) {
+    public void printStateMatrix(long[][] stateMatrix) {
         // Print the state matrix for debugging purposes
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
                 // convert each long into hex to visualize better
-                System.out.println("stateMatrix[" + i + "][" + j + "] = " + Long.toHexString(stateMatrix[i][j]));
+                // System.out.println("stateMatrix[" + i + "][" + j + "] = " +
+                // Long.toHexString(stateMatrix[i][j]));
+
+                // %016X is used in String.format to format the long value as a hexadecimal
+                // string with leading zeros to ensure it is represented as one long.
+                System.out.println("stateMatrix[" + i + "][" + j + "] = " + String.format("%016X", stateMatrix[i][j]));
             }
         }
     }
@@ -404,11 +409,15 @@ public class SHA3SHAKE {
             for (int y = 0; y < 5; y++) {
                 resultLaneC[x] ^= stateMatrix[x][y];
             }
+        }
 
+        for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
 
+                // NOTE: zero indexed arrays, so instead of (x-1) % 5, we use (x+4) % 5
+
                 // Step 2: XOR neighboring columns (x-1, z) and (x+1, z-1)
-                long neighborLane1 = resultLaneC[(x - 1) % 5];
+                long neighborLane1 = resultLaneC[(x + 4) % 5];
 
                 long lastBit = (resultLaneC[(x + 1) % 5] & 1) << 63;
                 long remainingBits = resultLaneC[(x + 1) % 5] >> 1;
