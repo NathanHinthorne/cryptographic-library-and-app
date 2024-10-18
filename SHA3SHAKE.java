@@ -508,8 +508,8 @@ public class SHA3SHAKE {
     /*
      * ----------------------------------------------------------
      * Utility methods
-     * These methods don't rely on any instance-specific state).
-     * Instead, they are "shortcuts" to the main steps of the Keccak algorithm.
+     * These methods are "shortcuts" to the main steps of the Keccak algorithm.
+     * Most of their state is hardcoded.
      * ----------------------------------------------------------
      */
 
@@ -532,7 +532,7 @@ public class SHA3SHAKE {
 
         // This utility method will act like a controller.
 
-        // We'll need to create a new instance of SHA3SHAKE here with specific
+        // We'll need to create a new instance of SHA3SHAKE with specific
         // parameters here.
         SHA3SHAKE sha3 = new SHA3SHAKE();
 
@@ -560,7 +560,7 @@ public class SHA3SHAKE {
 
         // This utility method will act like a controller.
 
-        // We'll need to create a new instance of SHA3SHAKE here with specific
+        // We'll need to create a new instance of SHA3SHAKE with specific
         // parameters here.
         SHA3SHAKE shake = new SHA3SHAKE();
 
