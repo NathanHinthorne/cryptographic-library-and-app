@@ -454,7 +454,16 @@ public class SHA3SHAKE {
      * 
      * Effect: Ensures that bits are mixed across different lanes.
      */
-    private static void stepMapPi() {
+    private static long[][] stepMapPi(long[][] stateMatrix) {
+        long[][] newStateMatrix = new long[5][5];
+
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 5; y++) {
+                newStateMatrix[x][y] = stateMatrix[(x + 3 * y) % 5][x];
+            }
+        }
+
+        return newStateMatrix;
     }
 
     /**
