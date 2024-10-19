@@ -442,8 +442,8 @@ public class SHA3SHAKE {
      * Effect: Provides non-linearity by rotating bits in different ways
      * for each lane.
      */
-    private static void stepMapRho() {
-
+    private static long[][] stepMapRho(long[][] stateMatrix) {
+        return null;
     }
 
     /**
@@ -475,7 +475,8 @@ public class SHA3SHAKE {
      * Effect: Introduces non-linearity, which is critical for creating a
      * secure cryptographic transformation that resists linear attacks.
      */
-    private static void stepMapChi() {
+    private static long[][] stepMapChi(long[][] stateMatrix) {
+        return null;
     }
 
     /**
@@ -487,7 +488,8 @@ public class SHA3SHAKE {
      * Effect: Ensures that the permutations applied in each round differ,
      * preventing any symmetry or structure from weakening the hash function.
      */
-    private static void stepMapIota() {
+    private static long[][] stepMapIota(long[][] stateMatrix) {
+        return null;
     }
 
     /*
