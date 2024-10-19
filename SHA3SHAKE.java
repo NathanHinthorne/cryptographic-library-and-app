@@ -283,7 +283,7 @@ public class SHA3SHAKE {
      * @param stateMatrix 2D array of longs
      * @return byte array
      */
-    private byte[] stateMatrixToByteString(long[][] stateMatrix) {
+    private static byte[] stateMatrixToByteString(long[][] stateMatrix) {
         byte[] byteString = new byte[200]; // Need 1,600 bits. 8 bits per byte.
 
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
@@ -328,7 +328,7 @@ public class SHA3SHAKE {
     // return byteString;
     // }
 
-    private long[][] byteStringToStateMatrix(byte[] byteString) {
+    private static long[][] byteStringToStateMatrix(byte[] byteString) {
         long[][] stateMatrix = new long[5][5];
 
         // real formula is: A[x, y, z] = S[w(5y + x) + z]
@@ -336,7 +336,7 @@ public class SHA3SHAKE {
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 for (int z = 0; z < 8; z++) {
-                    stateMatrix[x][y] = byteString[8 * (5 * y + x) + z] << z * 8;
+                    stateMatrix[x][y] = byteString[8 * (5 * y + x) + z] << 8;
                 }
             }
         }
@@ -344,7 +344,7 @@ public class SHA3SHAKE {
         return stateMatrix;
     }
 
-    public void printStateMatrix(long[][] stateMatrix) {
+    public static void printStateMatrix(long[][] stateMatrix) {
         // Print the state matrix for debugging purposes
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
@@ -367,7 +367,7 @@ public class SHA3SHAKE {
      * @param m ???
      * @return The padded plain-text message in byte array
      */
-    private byte[] pad(int x, int m) {
+    private static byte[] pad(int x, int m) {
         int j = (-m - 2) % x;
 
         byte[] P = new byte[j + 2]; // is this size okay?
@@ -397,7 +397,7 @@ public class SHA3SHAKE {
      * @param stateMatrix 3D matrix of bits
      * @return 3D matrix of bits
      */
-    public long[][] stepMapTheta(long[][] stateMatrix) {
+    public static long[][] stepMapTheta(long[][] stateMatrix) {
 
         long[][] newStateMatrix = new long[5][5];
 
@@ -442,7 +442,7 @@ public class SHA3SHAKE {
      * Effect: Provides non-linearity by rotating bits in different ways
      * for each lane.
      */
-    private void stepMapRho() {
+    private static void stepMapRho() {
 
     }
 
@@ -454,7 +454,7 @@ public class SHA3SHAKE {
      * 
      * Effect: Ensures that bits are mixed across different lanes.
      */
-    private void stepMapPi() {
+    private static void stepMapPi() {
     }
 
     /**
@@ -466,7 +466,7 @@ public class SHA3SHAKE {
      * Effect: Introduces non-linearity, which is critical for creating a
      * secure cryptographic transformation that resists linear attacks.
      */
-    private void stepMapChi() {
+    private static void stepMapChi() {
     }
 
     /**
@@ -478,7 +478,7 @@ public class SHA3SHAKE {
      * Effect: Ensures that the permutations applied in each round differ,
      * preventing any symmetry or structure from weakening the hash function.
      */
-    private void stepMapIota() {
+    private static void stepMapIota() {
     }
 
     /*
