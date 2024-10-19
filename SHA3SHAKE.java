@@ -336,7 +336,7 @@ public class SHA3SHAKE {
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 for (int z = 0; z < 8; z++) {
-                    stateMatrix[x][y] = byteString[8 * (5 * y + x) + z] << 8;
+                    stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteString[8 * (5 * y + x) + z];
                 }
             }
         }
