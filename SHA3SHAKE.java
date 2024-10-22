@@ -84,40 +84,6 @@ public class SHA3SHAKE {
      */
     public void init(int suffix) {
 
-        // DEMO DATA
-        // 5x5 matrix of longs (given in hex format)
-        stateMatrix = new long[][] {
-                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
-                        0x4440000000000000L, 0x9990000000000000L },
-
-                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
-                        0x4440000000000000L, 0x5550000000000000L },
-
-                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
-                        0x4440000000000000L, 0x5550000000000000L },
-
-                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
-                        0x4440000000000000L, 0x5550000000000000L },
-
-                { 0x1110000000000000L, 0x2220000000000000L, 0x3330000000000000L,
-                        0x4440000000000000L, 0x5550000000000000L } };
-
-        System.out.println("State Matrix:");
-        printStateMatrix(stateMatrix);
-
-        System.out.println("\nByte String:");
-        byte[] byteArray = stateMatrixToByteString(stateMatrix);
-        int byteCount = 0;
-        for (int i = 0; i < byteArray.length; i++) {
-            System.out.print(byteArray[i] + " ");
-
-            // every 8 bytes, print a new line
-            if (byteCount % 8 == 7) {
-                System.out.println();
-            }
-            byteCount++;
-        }
-
         // Do the sponge construction algorithm here.
 
         /*
@@ -307,27 +273,6 @@ public class SHA3SHAKE {
 
         return byteString;
     }
-
-    // option #2
-    // private byte[] stateMatrixToByteString(long[][] stateMatrix) {
-    // byte[] byteString = new byte[200]; // Need 1,600 bits. 8 bits per byte.
-    // int byteStringIndex = 0;
-
-    // for (int x = 0; x < 5; x++) {
-    // for (int y = 0; y < 5; y++) {
-    // long lane = stateMatrix[x][y];
-
-    // // Convert the long value to bytes and copy to the byteString array
-    // for (int i = 0; i < Long.BYTES; i++) {
-    // byteString[byteStringIndex] = (byte) (lane >>> (i * 8));
-    // byteStringIndex++;
-    // }
-    // }
-    // }
-
-    // return byteString;
-    // }
-
     private static long[][] byteStringToStateMatrix(byte[] byteString) {
         long[][] stateMatrix = new long[5][5];
 
@@ -385,6 +330,29 @@ public class SHA3SHAKE {
     }
 
     /**
+     * Circular Right Shift. Preforms a circular right shift on a long value, while
+     * preserving the least significant bit and moving it to the most significant
+     * bit position.
+     * 
+     * @param value The long value to be shifted
+     * @return The shifted long value
+     */
+    private static long circularRightShift(long value) {
+        // Mask to isolate the least significant bit
+        long lastBit = value & 1L;
+        System.out.println("last bit: " + Long.toBinaryString(lastBit));
+
+        // Shift right by 1
+        long remainingBits = value >>> 1;
+        System.out.println("remaining bits: " + Long.toBinaryString(remainingBits));
+
+        // Move the LSB to the MSB position and OR it with the shifted result
+        long result = remainingBits | (lastBit << 63);
+
+        return result;
+    }
+
+    /**
      * Theta (θ) - Diffusion Step.
      * 
      * Functionality: Provides mixing between all bits in the state,
@@ -419,9 +387,11 @@ public class SHA3SHAKE {
                 // Step 2: XOR neighboring columns (x-1, z) and (x+1, z-1)
                 long neighborLane1 = resultLaneC[(x + 4) % 5];
 
-                long lastBit = (resultLaneC[(x + 1) % 5] & 1) << 63;
-                long remainingBits = resultLaneC[(x + 1) % 5] >> 1;
-                long neighborLane2 = remainingBits | lastBit; // bit-shift down (wrap around)
+                System.out.println("neighbor lane 1: " + Long.toBinaryString(neighborLane1));
+                System.out.println("neighbor lane 2: " + Long.toBinaryString(resultLaneC[(x + 1) % 5]));
+
+                long neighborLane2 = circularRightShift(resultLaneC[(x + 1) % 5]);
+                System.out.println("neighbor lane 2 (bitshifted): " + Long.toBinaryString(neighborLane2) + "\n");
 
                 resultLaneD[x] = neighborLane1 ^ neighborLane2;
 
