@@ -32,11 +32,20 @@ public class Testing {
                                 { 0x0000000000000015L, 0x0000000000000016L, 0x0000000000000017L, 0x0000000000000018L,
                                                 0x0000000000000019L }
                 };
+                System.out.println("--ORIGINAL STATE MATRIX--");
+                sha3shake.printStateMatrix(stateMatrix);
 
-                long[][] newStateMatrix = sha3shake.stepMapTheta(stateMatrix);
-                System.out.println("State Matrix:");
-                sha3shake.printStateMatrix(newStateMatrix);
-                // assertEquals(0x1110000000000000L, newStateMatrix[0][0]);
+                System.out.println("\n--Theta Step Mapping Result--");
+                long[][] matrixAfterTheta = sha3shake.stepMapTheta(stateMatrix);
+                sha3shake.printStateMatrix(matrixAfterTheta);
+
+                System.out.println("\n--Rho Step Mapping Result--");
+                long[][] matrixAfterRho = sha3shake.stepMapRho(stateMatrix);
+                sha3shake.printStateMatrix(matrixAfterRho);
+
+                System.out.println("\n--Pi Step Mapping Result--");
+                long[][] matrixAfterPi = sha3shake.stepMapPi(matrixAfterRho);
+                sha3shake.printStateMatrix(matrixAfterPi);
         }
 
 }
