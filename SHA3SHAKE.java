@@ -35,11 +35,6 @@ public class SHA3SHAKE {
     private int w;
 
     /**
-     * The width of a KECCAK-p permutation in bits.
-     */
-    private int b;
-
-    /**
      * The capacity of a KECCAK-p permutation in bits.
      */
     private int c;
@@ -273,6 +268,7 @@ public class SHA3SHAKE {
 
         return byteString;
     }
+
     private static long[][] byteStringToStateMatrix(byte[] byteString) {
         long[][] stateMatrix = new long[5][5];
 
@@ -337,19 +333,25 @@ public class SHA3SHAKE {
      * @param value The long value to be shifted
      * @return The shifted long value
      */
-    private static long circularRightShift(long value) {
-        // Mask to isolate the least significant bit
-        long lastBit = value & 1L;
-        System.out.println("last bit: " + Long.toBinaryString(lastBit));
+    private static long circularRightShift(long value, int shiftAmount) {
+        long lane = value;
+        for (int i = 0; i < shiftAmount; i++) {
+            // Mask to isolate the least significant bit
+            long lastBit = lane & 1L;
+            // System.out.println("last bit: " + Long.toBinaryString(lastBit) + " at i #" +
+            // i);
 
-        // Shift right by 1
-        long remainingBits = value >>> 1;
-        System.out.println("remaining bits: " + Long.toBinaryString(remainingBits));
+            // Shift right by 1
+            long remainingBits = lane >>> 1;
+            // System.out.println("remaining bits: " + Long.toBinaryString(remainingBits) +
+            // " at i #" + i);
 
-        // Move the LSB to the MSB position and OR it with the shifted result
-        long result = remainingBits | (lastBit << 63);
+            // Move the LSB to the MSB position and OR it with the shifted result
+            lane = remainingBits | (lastBit << 63);
+            // System.out.println("result: " + Long.toBinaryString(lane) + " at i #" + i);
+        }
 
-        return result;
+        return lane;
     }
 
     /**
@@ -387,11 +389,13 @@ public class SHA3SHAKE {
                 // Step 2: XOR neighboring columns (x-1, z) and (x+1, z-1)
                 long neighborLane1 = resultLaneC[(x + 4) % 5];
 
-                System.out.println("neighbor lane 1: " + Long.toBinaryString(neighborLane1));
-                System.out.println("neighbor lane 2: " + Long.toBinaryString(resultLaneC[(x + 1) % 5]));
+                // System.out.println("neighbor lane 1: " + Long.toBinaryString(neighborLane1));
+                // System.out.println("neighbor lane 2: " + Long.toBinaryString(resultLaneC[(x +
+                // 1) % 5]));
 
-                long neighborLane2 = circularRightShift(resultLaneC[(x + 1) % 5]);
-                System.out.println("neighbor lane 2 (bitshifted): " + Long.toBinaryString(neighborLane2) + "\n");
+                long neighborLane2 = circularRightShift(resultLaneC[(x + 1) % 5], 1);
+                // System.out.println("neighbor lane 2 (bitshifted): " +
+                // Long.toBinaryString(neighborLane2) + "\n");
 
                 resultLaneD[x] = neighborLane1 ^ neighborLane2;
 
@@ -412,8 +416,40 @@ public class SHA3SHAKE {
      * Effect: Provides non-linearity by rotating bits in different ways
      * for each lane.
      */
-    private static long[][] stepMapRho(long[][] stateMatrix) {
-        return null;
+    public static long[][] stepMapRho(long[][] stateMatrix) {
+        long[][] newStateMatrix = new long[5][5];
+
+        // Step 1: Keep A'[0, 0] the same as A[0, 0]
+        newStateMatrix[0][0] = stateMatrix[0][0];
+
+        // Step 2: Initialize (x, y) to (1, 0)
+        int x = 1;
+        int y = 0;
+
+        // Step 3: Perform rotation 24 times
+        for (int t = 0; t < 24; t++) {
+            int offset = ((t + 1) * (t + 2)) / 2; // Calculate offset
+
+            // System.out.println("offset: " + offset);
+
+            // System.out.println("stateMatrix[" + x + "][" + y + "] = " +
+            // Long.toBinaryString(stateMatrix[x][y]));
+
+            // "Rotate" the bits by bitshifting
+            newStateMatrix[x][y] = circularRightShift(stateMatrix[x][y], offset);
+
+            // System.out.println(
+            // "newStateMatrix[" + x + "][" + y + "] = " +
+            // Long.toBinaryString(newStateMatrix[x][y]) + "\n");
+
+            // Update (x, y) as per the given rule
+            int newX = y;
+            int newY = (2 * x + 3 * y) % 5;
+            x = newX;
+            y = newY;
+        }
+
+        return newStateMatrix;
     }
 
     /**
@@ -424,7 +460,7 @@ public class SHA3SHAKE {
      * 
      * Effect: Ensures that bits are mixed across different lanes.
      */
-    private static long[][] stepMapPi(long[][] stateMatrix) {
+    public static long[][] stepMapPi(long[][] stateMatrix) {
         long[][] newStateMatrix = new long[5][5];
 
         for (int x = 0; x < 5; x++) {
