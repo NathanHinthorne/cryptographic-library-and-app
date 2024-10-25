@@ -4,8 +4,8 @@ A SHA-3/SHAKE cryptographic library and a command line app to test the library. 
 
 ## BEFORE SUBMITTING
 
-- Remove junit
 - Remove test class
+- Make all non-required public methods private
 
 ## Understanding the algorithm (contribute to this section how you see fit)
 
