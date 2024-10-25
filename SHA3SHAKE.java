@@ -79,6 +79,38 @@ public class SHA3SHAKE {
      */
     public void init(int suffix) {
 
+        stateMatrix = new long[][] {
+                { 0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L },
+
+                { 0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L },
+
+                { 0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L },
+
+                { 0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L },
+
+                { 0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L,
+                        0x0000000000000000L }
+        };
+
         // Do the sponge construction algorithm here.
 
         /*
@@ -104,13 +136,7 @@ public class SHA3SHAKE {
          * 
          * Let S=f(S), and continue with Step 8.
          */
-
     }
-
-    /*
-     * Note: The ^ operator is XOR and is short for (~p ^ q) v (p ^ ~q) in logic
-     * notation.
-     */
 
     /*
      * ------------------- Absorbing Phase -------------------
@@ -244,7 +270,7 @@ public class SHA3SHAKE {
      * @param stateMatrix 2D array of longs
      * @return byte array
      */
-    private static byte[] stateMatrixToByteString(long[][] stateMatrix) {
+    private byte[] stateMatrixToByteString(long[][] stateMatrix) {
         byte[] byteString = new byte[200]; // Need 1,600 bits. 8 bits per byte.
 
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
@@ -269,7 +295,7 @@ public class SHA3SHAKE {
         return byteString;
     }
 
-    private static long[][] byteStringToStateMatrix(byte[] byteString) {
+    private long[][] byteStringToStateMatrix(byte[] byteString) {
         long[][] stateMatrix = new long[5][5];
 
         // real formula is: A[x, y, z] = S[w(5y + x) + z]
@@ -285,7 +311,7 @@ public class SHA3SHAKE {
         return stateMatrix;
     }
 
-    public static void printStateMatrix(long[][] stateMatrix) {
+    public void printStateMatrix() {
         // Print the state matrix for debugging purposes
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
@@ -308,7 +334,7 @@ public class SHA3SHAKE {
      * @param m ???
      * @return The padded plain-text message in byte array
      */
-    private static byte[] pad(int x, int m) {
+    private byte[] pad(int x, int m) {
         int j = (-m - 2) % x;
 
         byte[] P = new byte[j + 2]; // is this size okay?
@@ -333,7 +359,7 @@ public class SHA3SHAKE {
      * @param value The long value to be shifted
      * @return The shifted long value
      */
-    private static long circularRightShift(long value, int shiftAmount) {
+    private long circularRightShift(long value, int shiftAmount) {
         long lane = value;
         for (int i = 0; i < shiftAmount; i++) {
             // Mask to isolate the least significant bit
@@ -367,7 +393,7 @@ public class SHA3SHAKE {
      * @param stateMatrix 3D matrix of bits
      * @return 3D matrix of bits
      */
-    public static long[][] stepMapTheta(long[][] stateMatrix) {
+    public void stepMapTheta() {
 
         long[][] newStateMatrix = new long[5][5];
 
@@ -404,7 +430,7 @@ public class SHA3SHAKE {
             }
         }
 
-        return newStateMatrix;
+        stateMatrix = newStateMatrix;
     }
 
     /**
@@ -416,7 +442,7 @@ public class SHA3SHAKE {
      * Effect: Provides non-linearity by rotating bits in different ways
      * for each lane.
      */
-    public static long[][] stepMapRho(long[][] stateMatrix) {
+    public void stepMapRho() {
         long[][] newStateMatrix = new long[5][5];
 
         // Step 1: Keep A'[0, 0] the same as A[0, 0]
@@ -449,7 +475,7 @@ public class SHA3SHAKE {
             y = newY;
         }
 
-        return newStateMatrix;
+        stateMatrix = newStateMatrix;
     }
 
     /**
@@ -460,7 +486,7 @@ public class SHA3SHAKE {
      * 
      * Effect: Ensures that bits are mixed across different lanes.
      */
-    public static long[][] stepMapPi(long[][] stateMatrix) {
+    public void stepMapPi() {
         long[][] newStateMatrix = new long[5][5];
 
         for (int x = 0; x < 5; x++) {
@@ -469,7 +495,7 @@ public class SHA3SHAKE {
             }
         }
 
-        return newStateMatrix;
+        stateMatrix = newStateMatrix;
     }
 
     /**
@@ -481,8 +507,9 @@ public class SHA3SHAKE {
      * Effect: Introduces non-linearity, which is critical for creating a
      * secure cryptographic transformation that resists linear attacks.
      */
-    private static long[][] stepMapChi(long[][] stateMatrix) {
-        return null;
+    public void stepMapChi() {
+
+        // operation is done BY ROW using the logic gates given in the paper
     }
 
     /**
@@ -494,8 +521,22 @@ public class SHA3SHAKE {
      * Effect: Ensures that the permutations applied in each round differ,
      * preventing any symmetry or structure from weakening the hash function.
      */
-    private static long[][] stepMapIota(long[][] stateMatrix) {
-        return null;
+    public void stepMapIota() {
+        /*
+         * Seems deceptively simple, but this step is important
+         * 
+         * By adding a unique, round-specific constant to the state at the beginning of
+         * each round, Iota introduces an element that cannot be canceled or negated by
+         * other transformations. Even if other steps had symmetries or patterns, the
+         * unique Iota constant breaks these.
+         */
+
+        // adds asymmetric, round specific CONSTANTS to the (0,0) lane
+    }
+
+    public void keccak() {
+        // call all 5 step mapping functions
+
     }
 
     /*
