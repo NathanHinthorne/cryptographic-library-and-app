@@ -380,6 +380,10 @@ public class SHA3SHAKE {
         return lane;
     }
 
+    private long circularLeftShift(long value, int shiftAmount) {
+        return circularRightShift(value, 64 - shiftAmount);
+    }
+
     /**
      * Theta (θ) - Diffusion Step.
      * 
@@ -394,8 +398,6 @@ public class SHA3SHAKE {
      * @return 3D matrix of bits
      */
     public void stepMapTheta() {
-
-        long[][] newStateMatrix = new long[5][5];
 
         long[] resultLaneC = new long[5]; // lanes for each x
         long[] resultLaneD = new long[5]; // lanes for each x
@@ -426,11 +428,9 @@ public class SHA3SHAKE {
                 resultLaneD[x] = neighborLane1 ^ neighborLane2;
 
                 // Step 3: XOR each bit with resultLaneD
-                newStateMatrix[x][y] = stateMatrix[x][y] ^ resultLaneD[x];
+                stateMatrix[x][y] = stateMatrix[x][y] ^ resultLaneD[x];
             }
         }
-
-        stateMatrix = newStateMatrix;
     }
 
     /**
@@ -443,10 +443,8 @@ public class SHA3SHAKE {
      * for each lane.
      */
     public void stepMapRho() {
-        long[][] newStateMatrix = new long[5][5];
-
         // Step 1: Keep A'[0, 0] the same as A[0, 0]
-        newStateMatrix[0][0] = stateMatrix[0][0];
+        // stateMatrix[0][0] = stateMatrix[0][0];
 
         // Step 2: Initialize (x, y) to (1, 0)
         int x = 1;
@@ -462,7 +460,7 @@ public class SHA3SHAKE {
             // Long.toBinaryString(stateMatrix[x][y]));
 
             // "Rotate" the bits by bitshifting
-            newStateMatrix[x][y] = circularRightShift(stateMatrix[x][y], offset);
+            stateMatrix[x][y] = circularRightShift(stateMatrix[x][y], offset);
 
             // System.out.println(
             // "newStateMatrix[" + x + "][" + y + "] = " +
@@ -474,8 +472,6 @@ public class SHA3SHAKE {
             x = newX;
             y = newY;
         }
-
-        stateMatrix = newStateMatrix;
     }
 
     /**
@@ -487,15 +483,11 @@ public class SHA3SHAKE {
      * Effect: Ensures that bits are mixed across different lanes.
      */
     public void stepMapPi() {
-        long[][] newStateMatrix = new long[5][5];
-
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
-                newStateMatrix[x][y] = stateMatrix[(x + 3 * y) % 5][x];
+                stateMatrix[x][y] = stateMatrix[(x + 3 * y) % 5][x];
             }
         }
-
-        stateMatrix = newStateMatrix;
     }
 
     /**
@@ -508,8 +500,16 @@ public class SHA3SHAKE {
      * secure cryptographic transformation that resists linear attacks.
      */
     public void stepMapChi() {
-
         // operation is done BY ROW using the logic gates given in the paper
+
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 5; y++) {
+                // A′[x, y, z] = A[x, y, z] ⊕ ((A[(x+1) mod 5, y, z] ⊕ 1) ⋅ A[(x+2) mod 5, y,
+                // z]).
+                stateMatrix[x][y] = stateMatrix[x][y]
+                        ^ ((stateMatrix[(x + 1) % 5][y] ^ 1) & stateMatrix[(x + 2) % 5][y]);
+            }
+        }
     }
 
     /**
@@ -522,16 +522,44 @@ public class SHA3SHAKE {
      * preventing any symmetry or structure from weakening the hash function.
      */
     public void stepMapIota() {
-        /*
-         * Seems deceptively simple, but this step is important
-         * 
-         * By adding a unique, round-specific constant to the state at the beginning of
-         * each round, Iota introduces an element that cannot be canceled or negated by
-         * other transformations. Even if other steps had symmetries or patterns, the
-         * unique Iota constant breaks these.
-         */
-
         // adds asymmetric, round specific CONSTANTS to the (0,0) lane
+
+        // FOR TRAE AND TRAE ALONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // ¯\_(ツ)_/¯ ¯\_(ツ)_/¯ ¯\_(ツ)_/¯ ¯\_(ツ)_/¯ ¯\_(ツ)_/¯
+
+        // P.S. please finish this soon Trae :/
+
+        long RC = 0L;
+        for (int j = 0; j <= l; j++) {
+            // call roundConstant somewhere in here
+        }
+    }
+
+    private boolean roundConstant(int t) {
+        if (t % 255 == 0) {
+            return true;
+        }
+
+        // bitmask for R[0]
+        // bitmask for R[4]
+        // bitmask for R[5]
+        // bitmask for R[6]
+        // bitmask for R[8]
+
+        byte R = (byte) 0b10000000;
+        for (int i = 1; i <= t % 255; i++) {
+            // prepend a zero to the right of R (left shift)
+            R = (byte) (R << 1);
+
+            R ^= ((R & 0b10000000) >> 7); // XOR MSB to R[0]
+            R ^= ((R & 0b10000000) >> 7) << 4; // XOR MSB to R[4]
+            R ^= ((R & 0b10000000) >> 7) << 5; // XOR MSB to R[5]
+            R ^= ((R & 0b10000000) >> 7) << 6; // XOR MSB to R[6]
+        }
+
+        boolean hasZero = (R & 0b10000000) == 0;
+
+        return hasZero;
     }
 
     public void keccak() {
