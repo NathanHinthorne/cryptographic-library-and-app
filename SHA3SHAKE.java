@@ -540,12 +540,6 @@ public class SHA3SHAKE {
             return true;
         }
 
-        // bitmask for R[0]
-        // bitmask for R[4]
-        // bitmask for R[5]
-        // bitmask for R[6]
-        // bitmask for R[8]
-
         byte R = (byte) 0b10000000;
         for (int i = 1; i <= t % 255; i++) {
             // prepend a zero to the right of R (left shift)
