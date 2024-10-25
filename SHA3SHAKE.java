@@ -380,10 +380,6 @@ public class SHA3SHAKE {
         return lane;
     }
 
-    private long circularLeftShift(long value, int shiftAmount) {
-        return circularRightShift(value, 64 - shiftAmount);
-    }
-
     /**
      * Theta (θ) - Diffusion Step.
      * 
