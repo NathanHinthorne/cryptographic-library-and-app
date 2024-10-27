@@ -17,6 +17,21 @@ public class SHA3SHAKE {
      */
     private final SecureRandom random = new SecureRandom();
 
+    /**
+     * Array of round constants to be applied to Lane(0, 0), precomputed for each 
+     * of the 24 rounds.
+     */
+    private final long[] ROUND_CONSTANTS = new long[] {
+        0x0000000000000001L, 0x0000000000008082L, 0x800000000000808aL,
+        0x8000000080008000L, 0x000000000000808bL, 0x0000000080000001L,
+        0x8000000080008081L, 0x8000000000008009L, 0x000000000000008aL,
+        0x0000000000000088L, 0x0000000080008009L, 0x000000008000000aL,
+        0x000000008000808bL, 0x800000000000008bL, 0x8000000000008089L,
+        0x8000000000008003L, 0x8000000000008002L, 0x8000000000000080L,
+        0x000000000000800aL, 0x800000008000000aL, 0x8000000080008081L,
+        0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
+    };
+
     // DATA STRUCTURES AND PARAMETERS
 
     /**
@@ -517,39 +532,10 @@ public class SHA3SHAKE {
      * Effect: Ensures that the permutations applied in each round differ,
      * preventing any symmetry or structure from weakening the hash function.
      */
-    public void stepMapIota() {
+    public void stepMapIota(int round) {
         // adds asymmetric, round specific CONSTANTS to the (0,0) lane
 
-        // FOR TRAE AND TRAE ALONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // ¯\_(ツ)_/¯ ¯\_(ツ)_/¯ ¯\_(ツ)_/¯ ¯\_(ツ)_/¯ ¯\_(ツ)_/¯
-
-        // P.S. please finish this soon Trae :/
-
-        long RC = 0L;
-        for (int j = 0; j <= l; j++) {
-            // call roundConstant somewhere in here
-        }
-    }
-
-    private boolean roundConstant(int t) {
-        if (t % 255 == 0) {
-            return true;
-        }
-
-        byte R = (byte) 0b10000000;
-        for (int i = 1; i <= t % 255; i++) {
-            // prepend a zero to the right of R (left shift)
-            R = (byte) (R << 1);
-
-            R ^= ((R & 0b10000000) >> 7); // XOR MSB to R[0]
-            R ^= ((R & 0b10000000) >> 7) << 4; // XOR MSB to R[4]
-            R ^= ((R & 0b10000000) >> 7) << 5; // XOR MSB to R[5]
-            R ^= ((R & 0b10000000) >> 7) << 6; // XOR MSB to R[6]
-        }
-
-        boolean hasZero = (R & 0b10000000) == 0;
-
-        return hasZero;
+        stateMatrix[0][0] ^= ROUND_CONSTANTS[round];
     }
 
     public void keccak() {
