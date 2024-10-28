@@ -18,18 +18,18 @@ public class SHA3SHAKE {
     private final SecureRandom random = new SecureRandom();
 
     /**
-     * Array of round constants to be applied to Lane(0, 0), precomputed for each 
+     * Array of round constants to be applied to Lane(0, 0), precomputed for each
      * of the 24 rounds.
      */
     private final long[] ROUND_CONSTANTS = new long[] {
-        0x0000000000000001L, 0x0000000000008082L, 0x800000000000808aL,
-        0x8000000080008000L, 0x000000000000808bL, 0x0000000080000001L,
-        0x8000000080008081L, 0x8000000000008009L, 0x000000000000008aL,
-        0x0000000000000088L, 0x0000000080008009L, 0x000000008000000aL,
-        0x000000008000808bL, 0x800000000000008bL, 0x8000000000008089L,
-        0x8000000000008003L, 0x8000000000008002L, 0x8000000000000080L,
-        0x000000000000800aL, 0x800000008000000aL, 0x8000000080008081L,
-        0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
+            0x0000000000000001L, 0x0000000000008082L, 0x800000000000808aL,
+            0x8000000080008000L, 0x000000000000808bL, 0x0000000080000001L,
+            0x8000000080008081L, 0x8000000000008009L, 0x000000000000008aL,
+            0x0000000000000088L, 0x0000000080008009L, 0x000000008000000aL,
+            0x000000008000808bL, 0x800000000000008bL, 0x8000000000008089L,
+            0x8000000000008003L, 0x8000000000008002L, 0x8000000000000080L,
+            0x000000000000800aL, 0x800000008000000aL, 0x8000000080008081L,
+            0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
     };
 
     // DATA STRUCTURES AND PARAMETERS
@@ -39,46 +39,24 @@ public class SHA3SHAKE {
      * core structure for the algorithm's operations. It is used to store
      * intermediate values during the absorbing (input) and squeezing (output)
      * phases and undergoes multiple permutations to ensure security.
-     * 
-     * The information in it is converted from a byte string.
      */
-    private long[][] stateMatrix = new long[5][5];
-
-    /**
-     * The length of the z axis long the state matrix (aka the length of a lane).
-     */
-    private int w;
+    private long[][] stateMatrix;
 
     /**
      * The capacity of a KECCAK-p permutation in bits.
      */
-    private int c;
+    private int capacity;
 
     /**
      * The rate of a KECCAK-p permutation in bits.
      */
-    private int r;
+    private int rate;
 
     /**
      * The length of the digest of a hash function or the requested length of the
      * output of an XOF, in bits.
      */
     private int d;
-
-    /**
-     * The input string to a SHA-3 hash or XOF function.
-     */
-    private String M = "";
-
-    /**
-     * The input string of the sponge.
-     */
-    private String N = "";
-
-    /**
-     * [add description for P]
-     */
-    private String P = "";
 
     public SHA3SHAKE() {
     }
@@ -93,64 +71,27 @@ public class SHA3SHAKE {
      *               level = suffix)
      */
     public void init(int suffix) {
+        // Validate suffix
+        if (suffix != 224 && suffix != 256 && suffix != 384 && suffix != 512 // SHA-3 variants
+                && suffix != 128 && suffix != 256) { // SHAKE variants
+            throw new IllegalArgumentException(
+                    "Invalid suffix. Must be 224, 256, 384, or 512 for SHA-3, or 128 or 256 for SHAKE");
+        }
 
-        stateMatrix = new long[][] {
-                { 0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L },
+        stateMatrix = new long[5][5];
 
-                { 0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L },
+        // For SHA-3: capacity = 2 × output length
+        // For SHAKE: capacity = 2 × security level
+        capacity = 2 * suffix;
 
-                { 0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L },
+        // The rate is what remains from the 1600 bits of state after subtracting
+        // capacity
+        rate = 1600 - capacity;
 
-                { 0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L },
-
-                { 0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L,
-                        0x0000000000000000L }
-        };
-
-        // Do the sponge construction algorithm here.
-
-        /*
-         * Steps:
-         * 
-         * 1. Let P=N || pad(r, len(N)).
-         * 
-         * 2. Let n=len(P)/r.
-         * 
-         * 3. Let c=b-r.
-         * 
-         * 4. Split P into n blocks of length r.
-         * 
-         * 5. Let S=0^b.
-         * 
-         * 6. For i=0 to n-1: S=f(S ⊕ (P[i] ⊕ 0^c)).
-         * 
-         * 7. Let Z be the empty string.
-         * 
-         * 8. Let Z=Z || Trunc_r(S).
-         * 
-         * 9. If d≤|Z|, then return Trunc_d(Z); else continue.
-         * 
-         * Let S=f(S), and continue with Step 8.
-         */
+        // For SHA-3, d is the digest length (same as suffix)
+        // For SHAKE, d will be set later during squeeze based on requested output
+        // length
+        d = suffix;
     }
 
     /*
@@ -177,7 +118,39 @@ public class SHA3SHAKE {
      * @param len  byte count on the buffer
      */
     public void absorb(byte[] data, int pos, int len) {
-        /* … */
+        // Check if sponge is initialized
+        if (rate == 0) {
+            throw new IllegalStateException("Sponge must be initialized before absorbing data");
+        }
+
+        // Create a byte array with just the data we want to process
+        byte[] messageChunk = new byte[len];
+        System.arraycopy(data, pos, messageChunk, 0, len);
+
+        byte[] paddedMessage = applyPadding(messageChunk);
+
+        // Process the padded message in blocks of size r (rate)
+        int blockSize = rate / 8; // Convert bits to bytes
+        byte[] block = new byte[blockSize];
+
+        // Process each complete block
+        for (int i = 0; i < paddedMessage.length; i += blockSize) {
+            // Copy a block of data
+            int copyLength = Math.min(blockSize, paddedMessage.length - i);
+            System.arraycopy(paddedMessage, i, block, 0, copyLength);
+
+            byte[] currentState = stateMatrixToByteString(stateMatrix);
+
+            // XOR the input block with the first r bits of the state
+            for (int j = 0; j < blockSize; j++) {
+                currentState[j] ^= block[j];
+            }
+
+            stateMatrix = byteStringToStateMatrix(currentState);
+
+            // Apply the Keccak-f permutation
+            keccakF(currentState);
+        }
     }
 
     /**
@@ -188,7 +161,7 @@ public class SHA3SHAKE {
      * @param len  byte count on the buffer (starting at index 0)
      */
     public void absorb(byte[] data, int len) {
-        /* … */
+        absorb(data, 0, len);
     }
 
     /**
@@ -198,7 +171,7 @@ public class SHA3SHAKE {
      * @param data byte-oriented data buffer
      */
     public void absorb(byte[] data) {
-        /* … */
+        absorb(data, 0, data.length);
     }
 
     /*
@@ -280,6 +253,58 @@ public class SHA3SHAKE {
     // helper functions
 
     /**
+     * Implements the pad10*1 padding scheme as specified in the SHA3 standard.
+     * 
+     * @param m length of input in bits
+     * @return byte array containing the padding bits
+     */
+    private byte[] pad(int messageLength) {
+        // Calculate how many bits we need to pad
+        // We want the final length to be a multiple of rate
+        int remainingBits = rate - (messageLength % rate);
+
+        // We need at least 2 bits (for the starting 1 and ending 1)
+        // If we only have 1 bit left, we need to add another full block
+        if (remainingBits <= 1) {
+            remainingBits += rate;
+        }
+
+        // Convert to bytes (rounding up)
+        int paddingBytes = (remainingBits + 7) / 8;
+        byte[] padding = new byte[paddingBytes];
+
+        // Set first bit to 1 (in the first byte)
+        padding[0] = (byte) 0b10000000;
+
+        // Set last bit to 1 (in the last byte)
+        padding[paddingBytes - 1] |= 0b1;
+
+        return padding;
+    }
+
+    /**
+     * Applies the padding to a message and returns the padded result.
+     * 
+     * @param message the original message bytes
+     * @return the padded message
+     */
+    private byte[] applyPadding(byte[] message) {
+        if (rate <= 0) {
+            throw new IllegalArgumentException("Rate must be positive");
+        }
+
+        int messageBitLength = message.length * 8;
+        byte[] padding = pad(messageBitLength);
+
+        // Combine message and padding
+        byte[] result = new byte[message.length + padding.length];
+        System.arraycopy(message, 0, result, 0, message.length);
+        System.arraycopy(padding, 0, result, message.length, padding.length);
+
+        return result;
+    }
+
+    /**
      * Flatten a 5x5 matrix of longs into a linear byte array.
      * 
      * @param stateMatrix 2D array of longs
@@ -330,40 +355,11 @@ public class SHA3SHAKE {
         // Print the state matrix for debugging purposes
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 5; j++) {
-                // convert each long into hex to visualize better
-                // System.out.println("stateMatrix[" + i + "][" + j + "] = " +
-                // Long.toHexString(stateMatrix[i][j]));
-
                 // %016X is used in String.format to format the long value as a hexadecimal
                 // string with leading zeros to ensure it is represented as one long.
                 System.out.println("stateMatrix[" + i + "][" + j + "] = " + String.format("%016X", stateMatrix[i][j]));
             }
         }
-    }
-
-    /**
-     * Create a padding which will be appended to the end of a message. The padding
-     * starts and ends with a 1 bit. The middle is composed of 0 bits.
-     * 
-     * @param x The rate
-     * @param m ???
-     * @return The padded plain-text message in byte array
-     */
-    private byte[] pad(int x, int m) {
-        int j = (-m - 2) % x;
-
-        byte[] P = new byte[j + 2]; // is this size okay?
-
-        P[0] = (char) 1; // 1 bit to start
-
-        // put j amount of 0 bits between the 1 bits
-        for (int i = 1; i < j + 1; i++) {
-            P[i] = (char) 0;
-        }
-
-        P[j + 1] = (char) 1; // 1 bit to end
-
-        return P;
     }
 
     /**
@@ -538,9 +534,26 @@ public class SHA3SHAKE {
         stateMatrix[0][0] ^= ROUND_CONSTANTS[round];
     }
 
-    public void keccak() {
-        // call all 5 step mapping functions
+    public void executeRound(int round) {
+        stepMapTheta();
+        stepMapRho();
+        stepMapPi();
+        stepMapChi();
+        stepMapIota(round);
+    }
 
+    public byte[] keccakP(int numRounds, byte[] byteString) { // might not need to pass byteString
+        long[][] stateMatrix = byteStringToStateMatrix(byteString);
+
+        for (int round = 0; round < numRounds; round++) {
+            executeRound(round);
+        }
+
+        return stateMatrixToByteString(stateMatrix);
+    }
+
+    public byte[] keccakF(byte[] byteString) { // might not need to pass byteString
+        return keccakP(24, byteString);
     }
 
     /*
