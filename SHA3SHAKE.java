@@ -1,5 +1,6 @@
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
+import java.util.Arrays;
 
 /**
  * The SHA3SHAKE class will enable users to securely hash data, extract hash
@@ -78,7 +79,18 @@ public class SHA3SHAKE {
                     "Invalid suffix. Must be 224, 256, 384, or 512 for SHA-3, or 128 or 256 for SHAKE");
         }
 
-        stateMatrix = new long[5][5];
+        stateMatrix = new long[][] {
+                { 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
+                        0x0000000000000000L },
+                { 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
+                        0x0000000000000000L },
+                { 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
+                        0x0000000000000000L },
+                { 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
+                        0x0000000000000000L },
+                { 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
+                        0x0000000000000000L }
+        };
 
         // For SHA-3: capacity = 2 × output length
         // For SHAKE: capacity = 2 × security level
@@ -141,15 +153,15 @@ public class SHA3SHAKE {
 
             byte[] currentState = stateMatrixToByteString(stateMatrix);
 
-            // XOR the input block with the first r bits of the state
+            // XOR the input block with the first r bits of the state (not c bits)
             for (int j = 0; j < blockSize; j++) {
                 currentState[j] ^= block[j];
             }
 
-            stateMatrix = byteStringToStateMatrix(currentState);
-
             // Apply the Keccak-f permutation
-            keccakF(currentState);
+            byte[] afterPermutation = keccakF(currentState);
+
+            stateMatrix = byteStringToStateMatrix(afterPermutation);
         }
     }
 
@@ -289,10 +301,6 @@ public class SHA3SHAKE {
      * @return the padded message
      */
     private byte[] applyPadding(byte[] message) {
-        if (rate <= 0) {
-            throw new IllegalArgumentException("Rate must be positive");
-        }
-
         int messageBitLength = message.length * 8;
         byte[] padding = pad(messageBitLength);
 
@@ -507,16 +515,20 @@ public class SHA3SHAKE {
      * secure cryptographic transformation that resists linear attacks.
      */
     public void stepMapChi() {
-        // operation is done BY ROW using the logic gates given in the paper
 
+        long[][] newStateMatrix = Arrays.copyOf(stateMatrix, stateMatrix.length);
+
+        // operation is done BY ROW using the logic gates given in the paper
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 // A′[x, y, z] = A[x, y, z] ⊕ ((A[(x+1) mod 5, y, z] ⊕ 1) ⋅ A[(x+2) mod 5, y,
                 // z]).
-                stateMatrix[x][y] = stateMatrix[x][y]
+                newStateMatrix[x][y] = stateMatrix[x][y]
                         ^ ((stateMatrix[(x + 1) % 5][y] ^ 1) & stateMatrix[(x + 2) % 5][y]);
             }
         }
+
+        stateMatrix = newStateMatrix;
     }
 
     /**
@@ -543,7 +555,7 @@ public class SHA3SHAKE {
     }
 
     public byte[] keccakP(int numRounds, byte[] byteString) { // might not need to pass byteString
-        long[][] stateMatrix = byteStringToStateMatrix(byteString);
+        stateMatrix = byteStringToStateMatrix(byteString);
 
         for (int round = 0; round < numRounds; round++) {
             executeRound(round);
@@ -559,8 +571,7 @@ public class SHA3SHAKE {
     /*
      * ----------------------------------------------------------
      * Utility methods
-     * These methods are "shortcuts" to the main steps of the Keccak algorithm.
-     * Most of their state is hardcoded.
+     * These methods are specific implementations of the keccak algorithm
      * ----------------------------------------------------------
      */
 
