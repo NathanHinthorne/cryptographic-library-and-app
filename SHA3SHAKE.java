@@ -59,6 +59,17 @@ public class SHA3SHAKE {
      */
     private int d;
 
+    /**
+     * Whether or not the sponge has been squeezed since it was last initialized.
+     */
+    private boolean squeezed;
+
+    /**
+     * Whether or not a digest method has been called since the sponge was last 
+     * initialized.
+     */
+    private boolean digested;
+
     public SHA3SHAKE() {
     }
 
@@ -104,6 +115,9 @@ public class SHA3SHAKE {
         // For SHAKE, d will be set later during squeeze based on requested output
         // length
         d = suffix;
+
+        squeezed = false;
+        digested = false;
     }
 
     /*
@@ -212,9 +226,26 @@ public class SHA3SHAKE {
      * @return the val buffer containing the desired hash value
      */
     public byte[] squeeze(byte[] out, int len) {
-        /* … */
+        if (digested) {
+            throw new IllegalStateException("Cannot call squeeze() after digest().");
+        }
 
-        return new byte[] { 0 };
+        if (!squeezed) {
+            finishAbsorb();
+        }
+
+        squeezed = true;
+
+        for (int i = 0; i < len; i += rate / 8) {
+            byte[] chunk = stateMatrixToByteString(stateMatrix);
+            for (int j = 0; i < len && j < rate / 8; i++, j++) {
+                out[i] = chunk[j];
+            }
+
+            keccakF(chunk);
+        }
+
+        return out;
     }
 
     /**
@@ -227,9 +258,7 @@ public class SHA3SHAKE {
      * @return newly allocated buffer containing the desired hash value
      */
     public byte[] squeeze(int len) {
-        /* … */
-
-        return new byte[] { 0 };
+        return squeeze(new byte[len], len);
     }
 
     /*
@@ -247,8 +276,20 @@ public class SHA3SHAKE {
      * @return the val buffer containing the desired hash value
      */
     public byte[] digest(byte[] out) {
-        /* … */
-        return new byte[] { 0 };
+        if (squeezed) {
+            throw new IllegalStateException("Cannot call digest() after squeeze().");
+        }
+
+        if (!digested) {
+            finishAbsorb();
+        }
+
+        digested = true;
+
+        byte[] chunk = stateMatrixToByteString(stateMatrix);
+        System.arraycopy(chunk, 0, out, 0, chunk.length);
+
+        return out;
     }
 
     /**
@@ -258,11 +299,20 @@ public class SHA3SHAKE {
      * @return the desired hash value on a newly allocated byte array
      */
     public byte[] digest() {
-        /* … */
-        return new byte[] { 0 };
+        return digest(new byte[rate / 8]);
     }
 
     // helper functions
+
+    private void finishAbsorb() {
+        // Need to absorb (in the abstract sense) accumulated message here
+        // I.e. perform steps 1-6 of Algorithm 8 in specs
+
+        // Thus, implementation of this method is dependent on how we store message 
+        // pieces obtained via absorb methods
+
+        // Implementation pending Nathan being convinced that this is good
+    }
 
     /**
      * Implements the pad10*1 padding scheme as specified in the SHA3 standard.
