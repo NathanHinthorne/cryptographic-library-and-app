@@ -33,6 +33,11 @@ public class SHA3SHAKE {
             0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
     };
 
+    /**
+     * The width (i.e. input/output length) of KECCAK.
+     */
+    private final int WIDTH = 1600;
+
     // DATA STRUCTURES AND PARAMETERS
 
     /**
@@ -60,10 +65,22 @@ public class SHA3SHAKE {
     private int d;
 
     /**
+<<<<<<< HEAD
      * Holds all the input data (message, keys, random samples, etc) to be used
      * later.
      */
     public byte[] input;
+=======
+     * Whether or not the sponge has been squeezed since it was last initialized.
+     */
+    private boolean squeezed;
+
+    /**
+     * Whether or not a digest method has been called since the sponge was last 
+     * initialized.
+     */
+    private boolean digested;
+>>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
 
     public SHA3SHAKE() {
     }
@@ -111,7 +128,12 @@ public class SHA3SHAKE {
         // length
         d = suffix;
 
+<<<<<<< HEAD
         input = new byte[0];
+=======
+        squeezed = false;
+        digested = false;
+>>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
     }
 
     /*
@@ -204,9 +226,26 @@ public class SHA3SHAKE {
      * @return the val buffer containing the desired hash value
      */
     public byte[] squeeze(byte[] out, int len) {
-        /* … */
+        if (digested) {
+            throw new IllegalStateException("Cannot call squeeze() after digest().");
+        }
 
-        return new byte[] { 0 };
+        if (!squeezed) {
+            finishAbsorb();
+        }
+
+        squeezed = true;
+
+        for (int i = 0; i < len; i += blockByteLength()) {
+            byte[] block = stateMatrixToByteString(stateMatrix);
+            for (int j = 0; i < len && j < blockByteLength(); i++, j++) {
+                out[i] = block[j];
+            }
+
+            keccakF(block);
+        }
+
+        return out;
     }
 
     /**
@@ -219,9 +258,7 @@ public class SHA3SHAKE {
      * @return newly allocated buffer containing the desired hash value
      */
     public byte[] squeeze(int len) {
-        /* … */
-
-        return new byte[] { 0 };
+        return squeeze(new byte[len], len);
     }
 
     /*
@@ -239,8 +276,20 @@ public class SHA3SHAKE {
      * @return the val buffer containing the desired hash value
      */
     public byte[] digest(byte[] out) {
-        /* … */
-        return new byte[] { 0 };
+        if (squeezed) {
+            throw new IllegalStateException("Cannot call digest() after squeeze().");
+        }
+
+        if (!digested) {
+            finishAbsorb();
+        }
+
+        digested = true;
+
+        byte[] block = stateMatrixToByteString(stateMatrix);
+        System.arraycopy(block, 0, out, 0, blockByteLength());
+
+        return out;
     }
 
     /**
@@ -250,11 +299,35 @@ public class SHA3SHAKE {
      * @return the desired hash value on a newly allocated byte array
      */
     public byte[] digest() {
-        /* … */
-        return new byte[] { 0 };
+        return digest(new byte[blockByteLength()]);
     }
 
     // helper functions
+
+    /**
+     * The number of bytes in a block. Dependent on the rate.
+     * 
+     * @return the number of bytes in a block
+     */
+    private int blockByteLength() {
+        return rate / 8;
+    }
+
+    /**
+     * Perform absorb operations (padding and permutation) on the final input string.
+     * Should be called only after all calls to absorb.
+     */
+    private void finishAbsorb() {
+        byte[] p = applyPadding(input);
+        byte[] s = new byte[WIDTH];
+
+        for (int i = 0; i < p.length * blockByteLength(); i++) {
+            for (int j = i; j < blockByteLength() + i; j++) {
+                s[j] = (byte) (s[j] ^ p[j]);
+            }
+            s = keccakF(s);
+        }
+    }
 
     /**
      * Implements the pad10*1 padding scheme as specified in the SHA3 standard.
