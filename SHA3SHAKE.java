@@ -81,6 +81,11 @@ public class SHA3SHAKE {
      */
     private boolean digested;
 
+    /**
+     * Whether or not the sponge has been initialized.
+     */
+    private boolean initialized = false;
+
     public SHA3SHAKE() {
     }
 
@@ -94,12 +99,6 @@ public class SHA3SHAKE {
      *               level = suffix)
      */
     public void init(int suffix) {
-        // Validate suffix
-        if (suffix != 224 && suffix != 256 && suffix != 384 && suffix != 512 // SHA-3 variants
-                && suffix != 128 && suffix != 256) { // SHAKE variants
-            throw new IllegalArgumentException(
-                    "Invalid suffix. Must be 224, 256, 384, or 512 for SHA-3, or 128 or 256 for SHAKE");
-        }
 
         stateMatrix = new long[][] {
                 { 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
@@ -131,6 +130,7 @@ public class SHA3SHAKE {
 
         squeezed = false;
         digested = false;
+        initialized = true;
     }
 
     /*
@@ -156,8 +156,7 @@ public class SHA3SHAKE {
      * @param len  byte count on the buffer
      */
     public void absorb(byte[] data, int pos, int len) {
-        // Check if sponge is initialized
-        if (rate == 0) {
+        if (!initialized) {
             throw new IllegalStateException("Sponge must be initialized before absorbing data");
         }
 
@@ -650,13 +649,21 @@ public class SHA3SHAKE {
          * each providing outputs of exactly 224, 256, 384, and 512 bits, respectively.
          */
 
-        // This utility method will act like a controller.
+        if (suffix != 224 && suffix != 256 && suffix != 384 && suffix != 512) {
+            throw new IllegalArgumentException(
+                    "Invalid suffix. Must be 224, 256, 384, or 512 for SHA-3");
+        }
 
-        // We'll need to create a new instance of SHA3SHAKE with specific
-        // parameters here.
         SHA3SHAKE sha3 = new SHA3SHAKE();
 
-        return new byte[] { 0 };
+        System.out.println("Running SHA-3 with a suffix of " + suffix);
+        sha3.init(suffix);
+
+        sha3.absorb(X);
+
+        out = sha3.digest(out);
+
+        return out;
     }
 
     /**
@@ -678,13 +685,21 @@ public class SHA3SHAKE {
          * applications such as key generation or padding.
          */
 
-        // This utility method will act like a controller.
+        if (suffix != 128 && suffix != 256) {
+            throw new IllegalArgumentException(
+                    "Invalid suffix. Must be 128 or 256 for SHAKE");
+        }
 
-        // We'll need to create a new instance of SHA3SHAKE with specific
-        // parameters here.
         SHA3SHAKE shake = new SHA3SHAKE();
 
-        return new byte[] { 0 };
+        System.out.println("Running SHAKE with a suffix of " + suffix);
+        shake.init(suffix);
+
+        shake.absorb(X);
+
+        out = shake.squeeze(out, L);
+
+        return out;
     }
 
 }

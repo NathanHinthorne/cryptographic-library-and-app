@@ -23,31 +23,38 @@ public class Testing {
                 // sha3shake.stepMapChi();
                 // sha3shake.printStateMatrix();
 
+                // byte[] message = "Hello, World!".getBytes();
+                // sha3shake.absorb(message);
+
+                // System.out.println("message being absorbed:");
+                // for (byte b : message) {
+                // System.out.printf("%02X ", b);
+                // }
+
+                // System.out.println("\n\nsponge's new input array:");
+                // for (byte b : sha3shake.input) {
+                // System.out.printf("%02X ", b);
+                // }
+
+                // byte[] message2 = "Goodbye, Cruel World...".getBytes();
+                // sha3shake.absorb(message2); // Absorb the second message
+
+                // System.out.println("\n\nmessage being absorbed:");
+                // for (byte b : message2) {
+                // System.out.printf("%02X ", b);
+                // }
+
+                // System.out.println("\n\nsponge's new input array:");
+                // for (byte b : sha3shake.input) {
+                // System.out.printf("%02X ", b);
+                // }
+
                 byte[] message = "Hello, World!".getBytes();
-                sha3shake.absorb(message);
 
-                System.out.println("message being absorbed:");
-                for (byte b : message) {
+                byte[] out = SHA3SHAKE.SHA3(224, message, null);
+                System.out.println("SHA3-224: ");
+                for (byte b : out) {
                         System.out.printf("%02X ", b);
                 }
-
-                System.out.println("\n\nsponge's new input array:");
-                for (byte b : sha3shake.input) {
-                        System.out.printf("%02X ", b);
-                }
-
-                byte[] message2 = "Goodbye, Cruel World...".getBytes();
-                sha3shake.absorb(message2); // Absorb the second message
-
-                System.out.println("\n\nmessage being absorbed:");
-                for (byte b : message2) {
-                        System.out.printf("%02X ", b);
-                }
-
-                System.out.println("\n\nsponge's new input array:");
-                for (byte b : sha3shake.input) {
-                        System.out.printf("%02X ", b);
-                }
-
         }
 }
