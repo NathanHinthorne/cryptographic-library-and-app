@@ -65,28 +65,21 @@ public class SHA3SHAKE {
     private int d;
 
     /**
-<<<<<<< HEAD
-<<<<<<< HEAD
      * Holds all the input data (message, keys, random samples, etc) to be used
      * later.
      */
     public byte[] input;
-=======
-=======
->>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
+
+    /**
      * Whether or not the sponge has been squeezed since it was last initialized.
      */
     private boolean squeezed;
 
     /**
-     * Whether or not a digest method has been called since the sponge was last 
+     * Whether or not a digest method has been called since the sponge was last
      * initialized.
      */
     private boolean digested;
-<<<<<<< HEAD
->>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
-=======
->>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
 
     public SHA3SHAKE() {
     }
@@ -134,17 +127,10 @@ public class SHA3SHAKE {
         // length
         d = suffix;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         input = new byte[0];
-=======
+
         squeezed = false;
         digested = false;
->>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
-=======
-        squeezed = false;
-        digested = false;
->>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
     }
 
     /*
@@ -325,7 +311,8 @@ public class SHA3SHAKE {
     }
 
     /**
-     * Perform absorb operations (padding and permutation) on the final input string.
+     * Perform absorb operations (padding and permutation) on the final input
+     * string.
      * Should be called only after all calls to absorb.
      */
     private void finishAbsorb() {
