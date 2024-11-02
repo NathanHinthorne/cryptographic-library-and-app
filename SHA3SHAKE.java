@@ -33,6 +33,11 @@ public class SHA3SHAKE {
             0x8000000000008080L, 0x0000000080000001L, 0x8000000080008008L
     };
 
+    /**
+     * The width (i.e. input/output length) of KECCAK.
+     */
+    private final int WIDTH = 1600;
+
     // DATA STRUCTURES AND PARAMETERS
 
     /**
@@ -236,13 +241,13 @@ public class SHA3SHAKE {
 
         squeezed = true;
 
-        for (int i = 0; i < len; i += rate / 8) {
-            byte[] chunk = stateMatrixToByteString(stateMatrix);
-            for (int j = 0; i < len && j < rate / 8; i++, j++) {
-                out[i] = chunk[j];
+        for (int i = 0; i < len; i += blockByteLength()) {
+            byte[] block = stateMatrixToByteString(stateMatrix);
+            for (int j = 0; i < len && j < blockByteLength(); i++, j++) {
+                out[i] = block[j];
             }
 
-            keccakF(chunk);
+            keccakF(block);
         }
 
         return out;
@@ -286,8 +291,8 @@ public class SHA3SHAKE {
 
         digested = true;
 
-        byte[] chunk = stateMatrixToByteString(stateMatrix);
-        System.arraycopy(chunk, 0, out, 0, chunk.length);
+        byte[] block = stateMatrixToByteString(stateMatrix);
+        System.arraycopy(block, 0, out, 0, blockByteLength());
 
         return out;
     }
@@ -299,19 +304,34 @@ public class SHA3SHAKE {
      * @return the desired hash value on a newly allocated byte array
      */
     public byte[] digest() {
-        return digest(new byte[rate / 8]);
+        return digest(new byte[blockByteLength()]);
     }
 
     // helper functions
 
+    /**
+     * The number of bytes in a block. Dependent on the rate.
+     * 
+     * @return the number of bytes in a block
+     */
+    private int blockByteLength() {
+        return rate / 8;
+    }
+
+    /**
+     * Perform absorb operations (padding and permutation) on the final input string.
+     * Should be called only after all calls to absorb.
+     */
     private void finishAbsorb() {
-        // Need to absorb (in the abstract sense) accumulated message here
-        // I.e. perform steps 1-6 of Algorithm 8 in specs
+        byte[] p = applyPadding(input);
+        byte[] s = new byte[WIDTH];
 
-        // Thus, implementation of this method is dependent on how we store message 
-        // pieces obtained via absorb methods
-
-        // Implementation pending Nathan being convinced that this is good
+        for (int i = 0; i < p.length * blockByteLength(); i++) {
+            for (int j = i; j < blockByteLength() + i; j++) {
+                s[j] = (byte) (s[j] ^ p[j]);
+            }
+            s = keccakF(s);
+        }
     }
 
     /**
