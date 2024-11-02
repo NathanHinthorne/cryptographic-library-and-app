@@ -284,7 +284,7 @@ public class SHA3SHAKE {
         digested = true;
 
         byte[] block = stateMatrixToByteString(stateMatrix);
-        System.arraycopy(block, 0, out, 0, blockByteLength());
+        System.arraycopy(block, 0, out, 0, d / 8);
 
         return out;
     }
@@ -296,10 +296,25 @@ public class SHA3SHAKE {
      * @return the desired hash value on a newly allocated byte array
      */
     public byte[] digest() {
-        return digest(new byte[blockByteLength()]);
+        return digest(new byte[d / 8]);
     }
 
     // helper functions
+
+    /**
+     * Create a deep copy of the state matrix.
+     * 
+     * @return a copy of the state matrix
+     */
+    private long[][] stateMatrixCopy() {
+        long[][] copy = new long[5][5];
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                copy[i][j] = stateMatrix[i][j];
+            }
+        }
+        return copy;
+    }
 
     /**
      * The number of bytes in a block. Dependent on the rate.
@@ -319,10 +334,11 @@ public class SHA3SHAKE {
         byte[] p = applyPadding(input);
         byte[] s = new byte[WIDTH];
 
-        for (int i = 0; i < p.length * blockByteLength(); i++) {
-            for (int j = i; j < blockByteLength() + i; j++) {
-                s[j] = (byte) (s[j] ^ p[j]);
+        for (int i = 0; i < p.length; i += blockByteLength()) {
+            for (int j = 0; j < blockByteLength(); j++) {
+                s[j] = (byte) (s[j] ^ p[j + i]);
             }
+
             s = keccakF(s);
         }
     }
@@ -556,11 +572,15 @@ public class SHA3SHAKE {
      * Effect: Ensures that bits are mixed across different lanes.
      */
     public void stepMapPi() {
+        long[][] newStateMatrix = stateMatrixCopy();
+
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
-                stateMatrix[x][y] = stateMatrix[(x + 3 * y) % 5][x];
+                newStateMatrix[x][y] = stateMatrix[(x + 3 * y) % 5][x];
             }
         }
+
+        stateMatrix = newStateMatrix;
     }
 
     /**
@@ -574,7 +594,7 @@ public class SHA3SHAKE {
      */
     public void stepMapChi() {
 
-        long[][] newStateMatrix = Arrays.copyOf(stateMatrix, stateMatrix.length);
+        long[][] newStateMatrix = stateMatrixCopy();
 
         // operation is done BY ROW using the logic gates given in the paper
         for (int x = 0; x < 5; x++) {
@@ -582,7 +602,7 @@ public class SHA3SHAKE {
                 // A′[x, y, z] = A[x, y, z] ⊕ ((A[(x+1) mod 5, y, z] ⊕ 1) ⋅ A[(x+2) mod 5, y,
                 // z]).
                 newStateMatrix[x][y] = stateMatrix[x][y]
-                        ^ ((stateMatrix[(x + 1) % 5][y] ^ 1) & stateMatrix[(x + 2) % 5][y]);
+                        ^ ((stateMatrix[(x + 1) % 5][y] ^ 0xFFFFFFFF) & stateMatrix[(x + 2) % 5][y]);
             }
         }
 
