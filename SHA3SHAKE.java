@@ -66,11 +66,14 @@ public class SHA3SHAKE {
 
     /**
 <<<<<<< HEAD
+<<<<<<< HEAD
      * Holds all the input data (message, keys, random samples, etc) to be used
      * later.
      */
     public byte[] input;
 =======
+=======
+>>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
      * Whether or not the sponge has been squeezed since it was last initialized.
      */
     private boolean squeezed;
@@ -80,6 +83,9 @@ public class SHA3SHAKE {
      * initialized.
      */
     private boolean digested;
+<<<<<<< HEAD
+>>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
+=======
 >>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
 
     public SHA3SHAKE() {
@@ -129,7 +135,12 @@ public class SHA3SHAKE {
         d = suffix;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         input = new byte[0];
+=======
+        squeezed = false;
+        digested = false;
+>>>>>>> 71f2194fbe4157beaf4ea539719344d82ecc0cb5
 =======
         squeezed = false;
         digested = false;
