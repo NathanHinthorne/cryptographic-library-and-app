@@ -57,4 +57,4 @@ KECCAK uses a **sponge construction**, a framework that absorbs an input and the
 
 ## Contributing
 
-Nathan Hinthorne, Trae Claar, ...
+Nathan Hinthorne and Trae Claar
