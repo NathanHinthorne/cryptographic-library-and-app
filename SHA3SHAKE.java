@@ -59,6 +59,12 @@ public class SHA3SHAKE {
      */
     private int d;
 
+    /**
+     * Holds all the input data (message, keys, random samples, etc) to be used
+     * later.
+     */
+    public byte[] input;
+
     public SHA3SHAKE() {
     }
 
@@ -104,6 +110,8 @@ public class SHA3SHAKE {
         // For SHAKE, d will be set later during squeeze based on requested output
         // length
         d = suffix;
+
+        input = new byte[0];
     }
 
     /*
@@ -112,10 +120,9 @@ public class SHA3SHAKE {
      * The input message is divided into blocks (based on the rate r).
      * 
      * Each block is XORed with the first r bits of the state matrix (the rest of
-     * the
-     * state, c bits, is untouched during this phase). This is done to inject the
-     * input data into the state, effectively combining the message with the current
-     * internal state through XOR.
+     * the state, c bits, is untouched during this phase). This is done to inject
+     * the input data into the state, effectively combining the message with the
+     * current internal state through XOR.
      * 
      * After XORing, the entire state matrix undergoes a permutation process that
      * shuffles the bits around in a complex but deterministic way.
@@ -135,34 +142,19 @@ public class SHA3SHAKE {
             throw new IllegalStateException("Sponge must be initialized before absorbing data");
         }
 
-        // Create a byte array with just the data we want to process
-        byte[] messageChunk = new byte[len];
-        System.arraycopy(data, pos, messageChunk, 0, len);
+        byte[] temp = new byte[input.length + len];
 
-        byte[] paddedMessage = applyPadding(messageChunk);
-
-        // Process the padded message in blocks of size r (rate)
-        int blockSize = rate / 8; // Convert bits to bytes
-        byte[] block = new byte[blockSize];
-
-        // Process each complete block
-        for (int i = 0; i < paddedMessage.length; i += blockSize) {
-            // Copy a block of data
-            int copyLength = Math.min(blockSize, paddedMessage.length - i);
-            System.arraycopy(paddedMessage, i, block, 0, copyLength);
-
-            byte[] currentState = stateMatrixToByteString(stateMatrix);
-
-            // XOR the input block with the first r bits of the state (not c bits)
-            for (int j = 0; j < blockSize; j++) {
-                currentState[j] ^= block[j];
-            }
-
-            // Apply the Keccak-f permutation
-            byte[] afterPermutation = keccakF(currentState);
-
-            stateMatrix = byteStringToStateMatrix(afterPermutation);
+        // Copy old data
+        for (int i = 0; i < input.length; i++) {
+            temp[i] = input[i];
         }
+
+        // Append new data
+        for (int i = 0; i < len; i++) {
+            temp[input.length + i] = data[pos + i];
+        }
+
+        input = temp;
     }
 
     /**
@@ -383,17 +375,12 @@ public class SHA3SHAKE {
         for (int i = 0; i < shiftAmount; i++) {
             // Mask to isolate the least significant bit
             long lastBit = lane & 1L;
-            // System.out.println("last bit: " + Long.toBinaryString(lastBit) + " at i #" +
-            // i);
 
             // Shift right by 1
             long remainingBits = lane >>> 1;
-            // System.out.println("remaining bits: " + Long.toBinaryString(remainingBits) +
-            // " at i #" + i);
 
             // Move the LSB to the MSB position and OR it with the shifted result
             lane = remainingBits | (lastBit << 63);
-            // System.out.println("result: " + Long.toBinaryString(lane) + " at i #" + i);
         }
 
         return lane;
