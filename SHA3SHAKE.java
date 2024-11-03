@@ -239,7 +239,7 @@ public class SHA3SHAKE {
         }
 
         if (!squeezed) {
-            finishAbsorb();
+            finishAbsorb((byte) 0xF8, (byte) 0x01);
         }
 
         squeezed = true;
@@ -289,7 +289,7 @@ public class SHA3SHAKE {
         }
 
         if (!digested) {
-            finishAbsorb();
+            finishAbsorb((byte) 0x60, (byte) 0x01);
         }
 
         digested = true;
@@ -345,8 +345,13 @@ public class SHA3SHAKE {
      * string.
      * Should be called only after all calls to absorb.
      */
-    private void finishAbsorb() {
-        byte[] p = applyPadding(input);
+    private void finishAbsorb(byte padStart, byte padEnd) {
+        byte[] p = new byte[input.length + (blockByteLength() - (input.length % blockByteLength()))];
+        System.arraycopy(input, 0, p, 0, input.length);
+        p[input.length] ^= padStart;
+        p[p.length - 1] ^= padEnd;
+
+        //byte[] p = applyPadding(input);
         byte[] s = new byte[WIDTH];
 
         for (int i = 0; i < p.length; i += blockByteLength()) {
