@@ -23,38 +23,43 @@ public class Testing {
                 // sha3shake.stepMapChi();
                 // sha3shake.printStateMatrix();
 
+                String byteString = "e7183e4d89c9";
+                String correctByteStringOutput = "650618f3b945c07de85b8478d69609647d5e2a432c6b15fbb3db91e4";
+
+                System.out.println("Input Message:");
                 // byte[] message = "Hello, World!".getBytes();
-                // sha3shake.absorb(message);
-
-                // System.out.println("message being absorbed:");
-                // for (byte b : message) {
-                // System.out.printf("%02X ", b);
-                // }
-
-                // System.out.println("\n\nsponge's new input array:");
-                // for (byte b : sha3shake.input) {
-                // System.out.printf("%02X ", b);
-                // }
-
-                // byte[] message2 = "Goodbye, Cruel World...".getBytes();
-                // sha3shake.absorb(message2); // Absorb the second message
-
-                // System.out.println("\n\nmessage being absorbed:");
-                // for (byte b : message2) {
-                // System.out.printf("%02X ", b);
-                // }
-
-                // System.out.println("\n\nsponge's new input array:");
-                // for (byte b : sha3shake.input) {
-                // System.out.printf("%02X ", b);
-                // }
-
-                byte[] message = "Hello, World!".getBytes();
-
-                byte[] out = SHA3SHAKE.SHA3(224, message, null);
-                System.out.println("SHA3-224: ");
-                for (byte b : out) {
+                byte[] message = Testing.hexStringToByteArray(byteString);
+                for (byte b : message) {
                         System.out.printf("%02X ", b);
                 }
+
+                System.out.println("\n");
+                byte[] out = SHA3SHAKE.SHA3(224, message, null);
+                // byte[] out = SHA3SHAKE.SHAKE(128, message, 20, null);
+                String hexResult = "";
+                for (byte b : out) {
+                        System.out.printf("%02X ", b);
+                        hexResult += String.format("%02X", b).toLowerCase();
+                }
+
+                System.out.println("\n\ntest results:");
+                System.out.println("Expected: " + correctByteStringOutput);
+                System.out.println("Got:      " + hexResult);
+                if (hexResult.equals(correctByteStringOutput)) {
+                        System.out.println("SUCCESS");
+                } else {
+                        System.out.println("FAIL");
+                }
+
+        }
+
+        public static byte[] hexStringToByteArray(String hexString) {
+                int len = hexString.length();
+                byte[] data = new byte[len / 2];
+                for (int i = 0; i < len; i += 2) {
+                        data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
+                                        + Character.digit(hexString.charAt(i + 1), 16));
+                }
+                return data;
         }
 }
