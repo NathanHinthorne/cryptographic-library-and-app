@@ -1,6 +1,5 @@
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
-import java.util.Arrays;
 
 /**
  * The SHA3SHAKE class will enable users to securely hash data, extract hash
@@ -283,7 +282,11 @@ public class SHA3SHAKE {
         digested = true;
 
         byte[] block = stateMatrixToByteString(stateMatrix);
-        System.arraycopy(block, 0, out, 0, d / 8);
+        // System.arraycopy(block, 0, out, 0, d / 8);
+        // write as for loop instead
+        for (int i = 0; i < d / 8; i++) {
+            out[i] = block[i];
+        }
 
         return out;
     }
@@ -681,9 +684,14 @@ public class SHA3SHAKE {
 
         sha3.absorb(X);
 
-        out = sha3.digest(out);
+        if (out == null) {
+            out = new byte[suffix / 8];
+        } else if (out.length < suffix / 8) {
+            throw new IllegalArgumentException(
+                    "Output buffer is too small. Needs at least " + (suffix / 8) + " bytes");
+        }
 
-        return out;
+        return sha3.digest(out);
     }
 
     /**
@@ -712,14 +720,19 @@ public class SHA3SHAKE {
 
         SHA3SHAKE shake = new SHA3SHAKE();
 
-        System.out.println("Running SHAKE with a suffix of " + suffix);
+        System.out.println("Running SHAKE with a suffix of " + suffix + " and output length of " + L);
         shake.init(suffix);
 
         shake.absorb(X);
 
-        out = shake.squeeze(out, L);
+        if (out == null) {
+            out = new byte[suffix / 8];
+        } else if (out.length < suffix / 8) {
+            throw new IllegalArgumentException(
+                    "Output buffer is too small. Needs at least " + (suffix / 8) + " bytes");
+        }
 
-        return out;
+        return shake.squeeze(out, L);
     }
 
 }
