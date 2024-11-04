@@ -80,6 +80,10 @@ public class SHA3SHAKE {
      */
     private boolean initialized = false;
 
+    private boolean isSHA3 = false;
+
+    private boolean isSHAKE = false;
+
     public SHA3SHAKE() {
     }
 
@@ -152,6 +156,15 @@ public class SHA3SHAKE {
     public void absorb(byte[] data, int pos, int len) {
         if (!initialized) {
             throw new IllegalStateException("Sponge must be initialized before absorbing data");
+        }
+        if (data == null) {
+            throw new IllegalArgumentException("Input data cannot be null");
+        }
+        if (pos < 0 || len < 0 || pos + len > data.length) {
+            throw new IllegalArgumentException("Invalid pos or len parameters");
+        }
+        if (squeezed || digested) {
+            throw new IllegalStateException("Cannot absorb after squeezing or digesting");
         }
 
         byte[] temp = new byte[input.length + len];
@@ -227,7 +240,7 @@ public class SHA3SHAKE {
         squeezed = true;
 
         for (int i = 0; i < len; i += blockByteLength()) {
-            byte[] block = stateMatrixToByteString(stateMatrix);
+            byte[] block = stateMatrixToByteArray(stateMatrix);
             for (int j = 0; i < len && j < blockByteLength(); i++, j++) {
                 out[i] = block[j];
             }
@@ -276,7 +289,7 @@ public class SHA3SHAKE {
 
         digested = true;
 
-        byte[] block = stateMatrixToByteString(stateMatrix);
+        byte[] block = stateMatrixToByteArray(stateMatrix);
         // System.arraycopy(block, 0, out, 0, d / 8);
         // write as for loop instead
         for (int i = 0; i < d / 8; i++) {
@@ -399,11 +412,11 @@ public class SHA3SHAKE {
      * @param stateMatrix 2D array of longs
      * @return byte array
      */
-    private byte[] stateMatrixToByteString(long[][] stateMatrix) {
-        byte[] byteString = new byte[200]; // Need 1,600 bits. 8 bits per byte.
+    private byte[] stateMatrixToByteArray(long[][] stateMatrix) {
+        byte[] byteArray = new byte[200]; // Need 1,600 bits. 8 bits per byte.
 
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        int byteStringIndex = 0;
+        int byteArrayIndex = 0;
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 long lane = stateMatrix[x][y];
@@ -413,18 +426,18 @@ public class SHA3SHAKE {
                 buffer.putLong(lane);
                 buffer.flip(); // Prepare the buffer for reading
 
-                // Copy the bytes from the buffer to the byteString array
+                // Copy the bytes from the buffer to the byteArray array
                 byte[] destArray = new byte[Long.BYTES];
                 buffer.get(destArray);
-                System.arraycopy(destArray, 0, byteString, byteStringIndex, Long.BYTES);
-                byteStringIndex += Long.BYTES;
+                System.arraycopy(destArray, 0, byteArray, byteArrayIndex, Long.BYTES);
+                byteArrayIndex += Long.BYTES;
             }
         }
 
-        return byteString;
+        return byteArray;
     }
 
-    private long[][] byteStringToStateMatrix(byte[] byteString) {
+    private long[][] byteArrayToStateMatrix(byte[] byteArray) {
         long[][] stateMatrix = new long[5][5];
 
         // real formula is: A[x, y, z] = S[w(5y + x) + z]
@@ -432,7 +445,7 @@ public class SHA3SHAKE {
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
                 for (int z = 0; z < 8; z++) {
-                    stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteString[8 * (5 * y + x) + z];
+                    stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteArray[8 * (5 * y + x) + z];
                 }
             }
         }
@@ -449,6 +462,15 @@ public class SHA3SHAKE {
                 System.out.println("stateMatrix[" + i + "][" + j + "] = " + String.format("%016X", stateMatrix[i][j]));
             }
         }
+    }
+
+    public void printByteArray() {
+        String hexResult = "";
+        byte[] byteArray = stateMatrixToByteArray(stateMatrix);
+        for (byte b : byteArray) {
+            hexResult += String.format("%02X", b).toLowerCase();
+        }
+        System.out.println(hexResult);
     }
 
     /**
@@ -473,6 +495,10 @@ public class SHA3SHAKE {
         }
 
         return lane;
+    }
+
+    private long circularLeftShift(long value, int shiftAmount) {
+        return circularRightShift(value, 64 - shiftAmount);
     }
 
     /**
@@ -512,7 +538,7 @@ public class SHA3SHAKE {
                 // System.out.println("neighbor lane 2: " + Long.toBinaryString(resultLaneC[(x +
                 // 1) % 5]));
 
-                long neighborLane2 = circularRightShift(resultLaneC[(x + 1) % 5], 1);
+                long neighborLane2 = circularLeftShift(resultLaneC[(x + 1) % 5], 1);
                 // System.out.println("neighbor lane 2 (bitshifted): " +
                 // Long.toBinaryString(neighborLane2) + "\n");
 
@@ -551,7 +577,7 @@ public class SHA3SHAKE {
             // Long.toBinaryString(stateMatrix[x][y]));
 
             // "Rotate" the bits by bitshifting
-            stateMatrix[x][y] = circularRightShift(stateMatrix[x][y], offset);
+            stateMatrix[x][y] = circularLeftShift(stateMatrix[x][y], offset);
 
             // System.out.println(
             // "newStateMatrix[" + x + "][" + y + "] = " +
@@ -628,24 +654,47 @@ public class SHA3SHAKE {
 
     public void executeRound(int round) {
         stepMapTheta();
+        System.out.println("\n\nAfter Theta:");
+        System.out.println("expected: e9e9001d20e9001d20e9001d20e9001d20e9001d2");
+        System.out.println("got:");
+        printByteArray();
+
         stepMapRho();
+
         stepMapPi();
+        System.out.println("\n\nAfter Rho/Pi:");
+        System.out.println(
+                "expected: e9e9000000000000074800001d20000001d20000000000001d2001d2000e9000000003a4000000e9000000000003a4");
+        System.out.println("got:");
+        printByteArray();
+
         stepMapChi();
+        System.out.println("\n\nAfter Chi:");
+        System.out.println(
+                "expected: e9e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
+        System.out.println("got:");
+        printByteArray();
+
         stepMapIota(round);
+        System.out.println("\n\nAfter Iota:");
+        System.out.println(
+                "expected: e8e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
+        System.out.println("got:");
+        printByteArray();
     }
 
-    public byte[] keccakP(int numRounds, byte[] byteString) { // might not need to pass byteString
-        stateMatrix = byteStringToStateMatrix(byteString);
+    public byte[] keccakP(int numRounds, byte[] byteArray) { // might not need to pass byteArray
+        stateMatrix = byteArrayToStateMatrix(byteArray);
 
         for (int round = 0; round < numRounds; round++) {
             executeRound(round);
         }
 
-        return stateMatrixToByteString(stateMatrix);
+        return stateMatrixToByteArray(stateMatrix);
     }
 
-    public byte[] keccakF(byte[] byteString) { // might not need to pass byteString
-        return keccakP(24, byteString);
+    public byte[] keccakF(byte[] byteArray) { // might not need to pass byteArray
+        return keccakP(24, byteArray);
     }
 
     /*
@@ -678,6 +727,7 @@ public class SHA3SHAKE {
         }
 
         SHA3SHAKE sha3 = new SHA3SHAKE();
+        sha3.isSHA3 = true; // Set flag to indicate SHA-3
 
         System.out.println("Running SHA-3 with a suffix of " + suffix);
         sha3.init(suffix);
@@ -719,6 +769,7 @@ public class SHA3SHAKE {
         }
 
         SHA3SHAKE shake = new SHA3SHAKE();
+        shake.isSHAKE = true; // Set flag to indicate SHAKE
 
         System.out.println("Running SHAKE with a suffix of " + suffix + " and output length of " + L);
         shake.init(suffix);
