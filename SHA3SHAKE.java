@@ -731,10 +731,10 @@ public class SHA3SHAKE {
         shake.absorb(X);
 
         if (out == null) {
-            out = new byte[suffix / 8];
-        } else if (out.length < suffix / 8) {
+            out = new byte[L];
+        } else if (out.length < L) {
             throw new IllegalArgumentException(
-                    "Output buffer is too small. Needs at least " + (suffix / 8) + " bytes");
+                    "Output buffer is too small. Needs at least " + (L) + " bytes");
         }
 
         return shake.squeeze(out, L);
