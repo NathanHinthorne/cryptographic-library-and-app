@@ -1,4 +1,5 @@
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.SecureRandom;
 
 /**
@@ -351,7 +352,7 @@ public class SHA3SHAKE {
         p[input.length] ^= padStart;
         p[p.length - 1] ^= padEnd;
 
-        //byte[] p = applyPadding(input);
+        // byte[] p = applyPadding(input);
         byte[] s = new byte[WIDTH];
 
         for (int i = 0; i < p.length; i += blockByteLength()) {
@@ -421,6 +422,7 @@ public class SHA3SHAKE {
         byte[] byteArray = new byte[200]; // Need 1,600 bits. 8 bits per byte.
 
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+
         int byteArrayIndex = 0;
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
@@ -502,8 +504,12 @@ public class SHA3SHAKE {
         return lane;
     }
 
-    private long circularLeftShift(long value, int shiftAmount) {
-        return circularRightShift(value, 64 - shiftAmount);
+    // private long circularLeftShift(long value, int shiftAmount) {
+    // return circularRightShift(value, 64 - shiftAmount);
+    // }
+
+    private long circularLeftShift(long value, int offset) {
+        return (value << offset) | (value >>> (64 - offset));
     }
 
     /**
@@ -521,36 +527,27 @@ public class SHA3SHAKE {
      */
     public void stepMapTheta() {
 
-        long[] resultLaneC = new long[5]; // lanes for each x
-        long[] resultLaneD = new long[5]; // lanes for each x
-
+        // Step 1: XOR every bit in a column
+        long[] C = new long[5];
         for (int x = 0; x < 5; x++) {
-            // Step 1: XOR every bit in a column
             for (int y = 0; y < 5; y++) {
-                resultLaneC[x] ^= stateMatrix[x][y];
+                C[x] ^= stateMatrix[x][y];
             }
         }
 
+        // Step 2: XOR neighboring columns (x-1, z) and (x+1, z-1)
+        long[] D = new long[5];
+        for (int x = 0; x < 5; x++) {
+            long neighborLane1 = C[(x + 4) % 5];
+            long neighborLane2 = circularLeftShift(C[(x + 1) % 5], 1);
+
+            D[x] = neighborLane1 ^ neighborLane2;
+        }
+
+        // Step 3: XOR each bit with resultLaneD
         for (int x = 0; x < 5; x++) {
             for (int y = 0; y < 5; y++) {
-
-                // NOTE: zero indexed arrays, so instead of (x-1) % 5, we use (x+4) % 5
-
-                // Step 2: XOR neighboring columns (x-1, z) and (x+1, z-1)
-                long neighborLane1 = resultLaneC[(x + 4) % 5];
-
-                // System.out.println("neighbor lane 1: " + Long.toBinaryString(neighborLane1));
-                // System.out.println("neighbor lane 2: " + Long.toBinaryString(resultLaneC[(x +
-                // 1) % 5]));
-
-                long neighborLane2 = circularLeftShift(resultLaneC[(x + 1) % 5], 1);
-                // System.out.println("neighbor lane 2 (bitshifted): " +
-                // Long.toBinaryString(neighborLane2) + "\n");
-
-                resultLaneD[x] = neighborLane1 ^ neighborLane2;
-
-                // Step 3: XOR each bit with resultLaneD
-                stateMatrix[x][y] = stateMatrix[x][y] ^ resultLaneD[x];
+                stateMatrix[x][y] ^= D[x];
             }
         }
     }
@@ -658,34 +655,52 @@ public class SHA3SHAKE {
     }
 
     public void executeRound(int round) {
-        stepMapTheta();
-        System.out.println("\n\nAfter Theta:");
-        System.out.println("expected: e9e9001d20e9001d20e9001d20e9001d20e9001d2");
-        System.out.println("got:");
-        printByteArray();
 
-        stepMapRho();
+        if (round == 0) {
+            System.out.println("Round 0");
+            System.out.println("initial input: ");
+            printByteArray();
+            printStateMatrix();
 
-        stepMapPi();
-        System.out.println("\n\nAfter Rho/Pi:");
-        System.out.println(
-                "expected: e9e9000000000000074800001d20000001d20000000000001d2001d2000e9000000003a4000000e9000000000003a4");
-        System.out.println("got:");
-        printByteArray();
+            stepMapTheta();
+            System.out.println("\n\nAfter Theta:");
+            System.out.println("expected: e9e9001d20e9001d20e9001d20e9001d20e9001d2");
+            System.out.println("got:");
+            printByteArray();
+            printStateMatrix();
 
-        stepMapChi();
-        System.out.println("\n\nAfter Chi:");
-        System.out.println(
-                "expected: e9e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
-        System.out.println("got:");
-        printByteArray();
+            stepMapRho();
 
-        stepMapIota(round);
-        System.out.println("\n\nAfter Iota:");
-        System.out.println(
-                "expected: e8e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
-        System.out.println("got:");
-        printByteArray();
+            stepMapPi();
+            // System.out.println("\n\nAfter Rho/Pi:");
+            // System.out.println(
+            // "expected:
+            // e9e9000000000000074800001d20000001d20000000000001d2001d2000e9000000003a4000000e9000000000003a4");
+            // System.out.println("got:");
+            // printByteArray();
+
+            stepMapChi();
+            // System.out.println("\n\nAfter Chi:");
+            // System.out.println(
+            // "expected:
+            // e9e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
+            // System.out.println("got:");
+            // printByteArray();
+
+            stepMapIota(round);
+            // System.out.println("\n\nAfter Iota:");
+            // System.out.println(
+            // "expected:
+            // e8e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
+            // System.out.println("got:");
+            // printByteArray();
+        } else {
+            stepMapTheta();
+            stepMapRho();
+            stepMapPi();
+            stepMapChi();
+            stepMapIota(round);
+        }
     }
 
     public byte[] keccakP(int numRounds, byte[] byteArray) { // might not need to pass byteArray
