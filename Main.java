@@ -1,71 +1,155 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.Scanner;
 
 public class Main {
 
-    private static final Scanner scanner = new Scanner(System.in);
+    /**
+     * A cryptographically secure random number generator.
+     */
+    private static final SecureRandom random = new SecureRandom();
+
+    /**
+     * Read a hex value from a string into a byte array.
+     * 
+     * @param s the string containing the hex value
+     * @return the hex value as a byte array
+     */
+    private static byte[] parseHexString(String s) {
+        byte[] result = new byte[s.length() / 2];
+
+        for (int i = 0; i < result.length; i++) {
+            System.out.println(s.substring(2 * i, 2 * i + 2));
+            result[i] = (byte) Integer.parseInt(s.substring(2 * i, 2 * i + 2), 16);
+        }
+
+        return result;
+    }
 
     public static void main(String[] args) {
-        boolean continueProgram = true;
-        while (continueProgram) {
-            System.out.println("|==============================================|");
-            System.out.println("|   Welcome to Sha-3/SHAKE Cryptographic App.  |");
-            System.out.println("|==============================================|\n");
-            System.out.println("Please select a function: \n");
-            System.out.println("1. Custom Hashing");
-            System.out.println("2. SHA-3 (224, 256, 384, 512)");
-            System.out.println("3. SHAKE (128, 256)");
-            String hashOption = scanner.next();
-            System.out.println();
+        String service = args[0];
+        String outPath = args[1];
 
-            if (hashOption.equals("1")) {
-                final SHA3SHAKE customSponge = new SHA3SHAKE();
+        if (!(service.equals("hash") || service.equals("mac") || service.equals("encrypt") || service.equals("decrypt"))) {
+            System.out.println("Invalid service: \"" + service + "\". Must be one of hash, mac, encrypt, or decrypt.");
+            return;
+        }
 
-                // walk user through initialization
-                System.out.println("Please enter your message:");
-                String message = scanner.next();
-                System.out.println();
-                System.out.println("Please choose the desired output length in bits:");
-                System.out.println("1. 224");
-                System.out.println("2. 256");
-                System.out.println("3. 384");
-                System.out.println("4. 512");
-                String outputLength = scanner.next();
-                System.out.println();
+        int secLvl = 0;
+        if (service.equals("hash") || service.equals("mac")) {
+            String secLvlInput = args[1];
 
-                if (outputLength.equals("1")) {
-                    // initialize the SHA-3/SHAKE sponge
+            if (!(secLvlInput.equals("224") || secLvlInput.equals("256") || secLvlInput.equals("384") || secLvlInput.equals("512"))) {
+                System.out.println("Invalid security level: \"" + secLvlInput + "\". Must be one of one of 224, 256, 384, or 512.");
+                return;
+            }
+            
+            secLvl = Integer.parseInt(secLvlInput);
+        }
+        
+        // TODO: improve file not found error messages
+        if (service.equals("hash")) {
+            try (Scanner scanner = new Scanner(new File(args[3])); 
+                PrintWriter writer = new PrintWriter(new File(outPath))) {
 
-                } else if (outputLength.equals("2")) {
-                    // initialize the SHA-3/SHAKE sponge
-
-                } else if (outputLength.equals("3")) {
-                    // initialize the SHA-3/SHAKE sponge
-
-                } else if (outputLength.equals("4")) {
-                    // initialize the SHA-3/SHAKE sponge
-
+                //byte[] data = parseHexString(scanner.useDelimiter("\\Z").next());
+                byte[] data = scanner.useDelimiter("\\Z").next().getBytes();
+                            
+                byte[] hash = SHA3SHAKE.SHA3(secLvl, data, null);
+                
+                for (byte b : hash) {
+                    writer.printf("%x", b);
                 }
-                // walk user through stages of absorb, squeeze, and digest
+            } catch (FileNotFoundException e) {
+                System.out.println("Output file " + outPath + " not found.");
+            }
+            
+        } else if (service.equals("mac")) {
+            try (Scanner dataScanner = new Scanner(new File(args[3]));
+                //Scanner passScanner = new Scanner(new File(args[4])); 
+                PrintWriter writer = new PrintWriter(new File(outPath))) {
+
+                //byte[] passphrase = passScanner.useDelimiter("\\Z").next().getBytes();
+                byte[] passphrase = args[4].getBytes();
+                byte[] data = dataScanner.useDelimiter("\\Z").next().getBytes();
+                            
+                SHA3SHAKE sponge = new SHA3SHAKE();
+                sponge.init(secLvl);
+                sponge.absorb(passphrase);
+                sponge.absorb(data);
+                //TODO: sponge.absorb(T);????
+                //TODO: error check squeeze len
+                byte[] result = sponge.squeeze(Integer.parseInt(args[5]));
+
+                for (byte b : result) {
+                    writer.printf("%x", b);
+                }
+            } catch (FileNotFoundException e) {
+                System.out.println("Output file " + outPath + " not found.");
             }
 
-            else if (hashOption.equals("2")) {
-                // call utility class for SHA-3
-                // byte[] hash = SHA3SHAKE.SHA3();
+        } else if (service.equals("encrypt")) {
+            try (Scanner dataScanner = new Scanner(new File(args[2]));
+                PrintWriter writer = new PrintWriter(new File(outPath))) {
+
+                byte[] passphrase = args[3].getBytes();
+                byte[] data = dataScanner.useDelimiter("\\Z").next().getBytes();
+                            
+                byte[] key = SHA3SHAKE.SHAKE(128, passphrase, 128, null);
+                byte[] nonce = new byte[16];
+                random.nextBytes(nonce);
+
+                SHA3SHAKE sponge = new SHA3SHAKE();
+                sponge.init(128);
+                sponge.absorb(nonce);
+                sponge.absorb(key);
+        
+                byte[] mask = sponge.squeeze(data.length);
+                for (int i = 0; i < data.length; i++) {
+                    data[i] ^= mask[i];
+                }
+
+                for (byte b : data) {
+                    writer.printf("%x", b);
+                }
+                writer.println();
+                for (byte b : nonce) {
+                    writer.printf("%x", b);
+                }
+            } catch (FileNotFoundException e) {
+                System.out.println("Output file " + outPath + " not found: " + e);
             }
 
-            else if (hashOption.equals("3")) {
-                // call utility class for SHAKE
-                // byte[] hash = SHA3SHAKE.SHAKE();
-            }
+        } else if (service.equals("decrypt")) {
+            try (Scanner scanner = new Scanner(new File(args[2]));
+                    PrintWriter writer = new PrintWriter(new File(outPath))) {
 
-            System.out.println("\nDo you want to create another hash? (y/n)");
-            String continueProgramString = scanner.next();
-            System.out.println();
-            if (continueProgramString.equals("n")) {
-                System.out.println("Goodbye!");
-                continueProgram = false;
+                byte[] passphrase = args[3].getBytes();
+                byte[] ciphertext = parseHexString(scanner.nextLine());
+                byte[] nonce = parseHexString(scanner.nextLine());
+
+                byte[] key = SHA3SHAKE.SHAKE(128, passphrase, 128, null);
+
+                SHA3SHAKE sponge = new SHA3SHAKE();
+                sponge.init(128);
+                sponge.absorb(nonce);
+                sponge.absorb(key);
+
+                byte[] mask = sponge.squeeze(ciphertext.length);
+                for (int i = 0; i < ciphertext.length; i++) {
+                    ciphertext[i] ^= mask[i];
+                }
+
+                writer.println(new String(ciphertext, StandardCharsets.UTF_8));
+                // for (byte b : ciphertext) {
+                //     writer.printf("%x", b);
+                // }
+            } catch (FileNotFoundException e) {
+                System.out.println("Output file " + outPath + " not found: " + e);
             }
-            System.out.println();
         }
     }
 

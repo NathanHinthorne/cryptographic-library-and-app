@@ -13,11 +13,6 @@ import java.security.SecureRandom;
 public class SHA3SHAKE {
 
     /**
-     * A cryptographically secure random number generator.
-     */
-    private final SecureRandom random = new SecureRandom();
-
-    /**
      * Array of round constants to be applied to Lane(0, 0), precomputed for each
      * of the 24 rounds.
      */
