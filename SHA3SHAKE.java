@@ -1,6 +1,5 @@
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.SecureRandom;
 
 /**
  * The SHA3SHAKE class will enable users to securely hash data, extract hash
@@ -63,7 +62,7 @@ public class SHA3SHAKE {
      * Holds all the input data (message, keys, random samples, etc) to be used
      * later.
      */
-    public byte[] input;
+    private byte[] input;
 
     /**
      * Whether or not the sponge has been squeezed since it was last initialized.
@@ -89,7 +88,6 @@ public class SHA3SHAKE {
     }
 
     /**
-     * REQUIRED:
      * Initialize the SHA-3/SHAKE sponge.
      * The suffix must be one of 224, 256, 384, or 512 for SHA-3, or one of 128 or
      * 256 for SHAKE.
@@ -147,7 +145,6 @@ public class SHA3SHAKE {
      */
 
     /**
-     * REQUIRED:
      * Update the SHAKE sponge with a byte-oriented data chunk.
      *
      * @param data byte-oriented data buffer
@@ -184,7 +181,6 @@ public class SHA3SHAKE {
     }
 
     /**
-     * REQUIRED:
      * Update the SHAKE sponge with a byte-oriented data chunk.
      *
      * @param data byte-oriented data buffer
@@ -195,7 +191,6 @@ public class SHA3SHAKE {
     }
 
     /**
-     * REQUIRED:
      * Update the SHAKE sponge with a byte-oriented data chunk.
      *
      * @param data byte-oriented data buffer
@@ -220,7 +215,6 @@ public class SHA3SHAKE {
      */
 
     /**
-     * REQUIRED:
      * Squeeze a chunk of hashed bytes from the sponge.
      * Call this method as many times as needed to extract the total desired number
      * of bytes.
@@ -253,7 +247,6 @@ public class SHA3SHAKE {
     }
 
     /**
-     * REQUIRED:
      * Squeeze a chunk of hashed bytes from the sponge.
      * Call this method as many times as needed to extract the total desired number
      * of bytes.
@@ -273,7 +266,6 @@ public class SHA3SHAKE {
      */
 
     /**
-     * REQUIRED:
      * Squeeze a whole SHA-3 digest of hashed bytes from the sponge.
      *
      * @param out hash value buffer
@@ -301,7 +293,6 @@ public class SHA3SHAKE {
     }
 
     /**
-     * REQUIRED:
      * Squeeze a whole SHA-3 digest of hashed bytes from the sponge.
      *
      * @return the desired hash value on a newly allocated byte array
@@ -344,8 +335,8 @@ public class SHA3SHAKE {
     private void finishAbsorb(byte padStart, byte padEnd) {
         byte[] p = new byte[input.length + (blockByteLength() - (input.length % blockByteLength()))];
         System.arraycopy(input, 0, p, 0, input.length);
-        p[input.length] ^= padStart;
-        p[p.length - 1] ^= padEnd;
+        // p[input.length] ^= padStart;
+        // p[p.length - 1] ^= padEnd;
 
         // byte[] p = applyPadding(input);
         byte[] s = new byte[WIDTH];
@@ -444,8 +435,8 @@ public class SHA3SHAKE {
 
         // real formula is: A[x, y, z] = S[w(5y + x) + z]
 
-        for (int x = 0; x < 5; x++) {
-            for (int y = 0; y < 5; y++) {
+        for (int y = 0; y < 5; y++) {
+            for (int x = 0; x < 5; x++) {
                 for (int z = 0; z < 8; z++) {
                     stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteArray[8 * (5 * y + x) + z];
                 }
@@ -520,7 +511,7 @@ public class SHA3SHAKE {
      * @param stateMatrix 3D matrix of bits
      * @return 3D matrix of bits
      */
-    public void stepMapTheta() {
+    private void stepMapTheta() {
 
         // Step 1: XOR every bit in a column
         long[] C = new long[5];
@@ -556,7 +547,7 @@ public class SHA3SHAKE {
      * Effect: Provides non-linearity by rotating bits in different ways
      * for each lane.
      */
-    public void stepMapRho() {
+    private void stepMapRho() {
         // Step 1: Keep A'[0, 0] the same as A[0, 0]
         // stateMatrix[0][0] = stateMatrix[0][0];
 
@@ -568,17 +559,8 @@ public class SHA3SHAKE {
         for (int t = 0; t < 24; t++) {
             int offset = ((t + 1) * (t + 2)) / 2; // Calculate offset
 
-            // System.out.println("offset: " + offset);
-
-            // System.out.println("stateMatrix[" + x + "][" + y + "] = " +
-            // Long.toBinaryString(stateMatrix[x][y]));
-
             // "Rotate" the bits by bitshifting
             stateMatrix[x][y] = circularLeftShift(stateMatrix[x][y], offset);
-
-            // System.out.println(
-            // "newStateMatrix[" + x + "][" + y + "] = " +
-            // Long.toBinaryString(newStateMatrix[x][y]) + "\n");
 
             // Update (x, y) as per the given rule
             int newX = y;
@@ -596,7 +578,7 @@ public class SHA3SHAKE {
      * 
      * Effect: Ensures that bits are mixed across different lanes.
      */
-    public void stepMapPi() {
+    private void stepMapPi() {
         long[][] newStateMatrix = stateMatrixCopy();
 
         for (int x = 0; x < 5; x++) {
@@ -617,7 +599,7 @@ public class SHA3SHAKE {
      * Effect: Introduces non-linearity, which is critical for creating a
      * secure cryptographic transformation that resists linear attacks.
      */
-    public void stepMapChi() {
+    private void stepMapChi() {
 
         long[][] newStateMatrix = stateMatrixCopy();
 
@@ -643,13 +625,13 @@ public class SHA3SHAKE {
      * Effect: Ensures that the permutations applied in each round differ,
      * preventing any symmetry or structure from weakening the hash function.
      */
-    public void stepMapIota(int round) {
+    private void stepMapIota(int round) {
         // adds asymmetric, round specific CONSTANTS to the (0,0) lane
 
         stateMatrix[0][0] ^= ROUND_CONSTANTS[round];
     }
 
-    public void executeRound(int round) {
+    private void executeRound(int round) {
 
         if (round == 0) {
             System.out.println("Round 0");
@@ -698,7 +680,7 @@ public class SHA3SHAKE {
         }
     }
 
-    public byte[] keccakP(int numRounds, byte[] byteArray) { // might not need to pass byteArray
+    private byte[] keccakP(int numRounds, byte[] byteArray) { // might not need to pass byteArray
         stateMatrix = byteArrayToStateMatrix(byteArray);
 
         for (int round = 0; round < numRounds; round++) {
@@ -708,7 +690,7 @@ public class SHA3SHAKE {
         return stateMatrixToByteArray(stateMatrix);
     }
 
-    public byte[] keccakF(byte[] byteArray) { // might not need to pass byteArray
+    private byte[] keccakF(byte[] byteArray) { // might not need to pass byteArray
         return keccakP(24, byteArray);
     }
 
@@ -720,7 +702,6 @@ public class SHA3SHAKE {
      */
 
     /**
-     * REQUIRED:
      * Compute the streamlined SHA-3-<224,256,384,512> on input X.
      *
      * @param suffix desired output length in bits (one of 224, 256, 384, 512)
@@ -744,7 +725,6 @@ public class SHA3SHAKE {
         SHA3SHAKE sha3 = new SHA3SHAKE();
         sha3.isSHA3 = true; // Set flag to indicate SHA-3
 
-        System.out.println("Running SHA-3 with a suffix of " + suffix);
         sha3.init(suffix);
 
         sha3.absorb(X);
@@ -760,7 +740,6 @@ public class SHA3SHAKE {
     }
 
     /**
-     * REQUIRED:
      * Compute the streamlined SHAKE-<128,256> on input X with output bitlength L.
      *
      * @param suffix desired security level (either 128 or 256)
@@ -786,7 +765,6 @@ public class SHA3SHAKE {
         SHA3SHAKE shake = new SHA3SHAKE();
         shake.isSHAKE = true; // Set flag to indicate SHAKE
 
-        System.out.println("Running SHAKE with a suffix of " + suffix + " and output length of " + L);
         shake.init(suffix);
 
         shake.absorb(X);
