@@ -7,7 +7,36 @@ A SHA-3/SHAKE cryptographic library and a command line app to test the library. 
 - Remove test class
 - Make all non-required public methods private
 
-## Understanding the algorithm (contribute to this section how you see fit)
+## How to use
+
+Run Main.java in the command line with appropriate arguments to make use of the following services:
+
+- Compute a hash:
+  - Usage: java Main hash <security_level> <output_file> <input_file>
+  - The security level must be one of: 224, 256, 384, or 512
+  - Example: java Main hash 256 output.txt input.txt
+- Compute a message authentication code (MAC):
+  - Usage: java Main mac <security_level> <output_file> <input_file> <passphrase> <mac_length>
+  - The security level must be one of: 224, 256, 384, or 512
+  - The MAC length must be greater than zero
+  - Example: java Main mac 256 output.txt input.txt mypassword 32
+- Encrypt:
+  - Usage: java Main encrypt <output_file> <input_file> <passphrase>
+  - Example: java Main encrypt encrypted.txt plaintext.txt mypassword
+- Decrypt:
+  - Usage: java Main decrypt <output_file> <input_file> <passphrase>
+  - Example: java Main decrypt decrypted.txt encrypted.txt mypassword
+
+Notes:
+
+- The order of arguments matters and must be provided exactly as shown
+- All file paths should be valid and accessible
+- The same passphrase must be used for decryption as was used for encryption
+- Output will be written to the specified output file in each case
+- Hash and MAC outputs are written in hexadecimal format
+- For encryption, both the encrypted data and a nonce are written to the output file
+
+## Understanding the algorithm
 
 ### What is KECCAK?
 
