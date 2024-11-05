@@ -404,46 +404,88 @@ public class SHA3SHAKE {
      * @param stateMatrix 2D array of longs
      * @return byte array
      */
-    private byte[] stateMatrixToByteArray(long[][] stateMatrix) {
-        byte[] byteArray = new byte[200]; // Need 1,600 bits. 8 bits per byte.
+    // private byte[] stateMatrixToByteArray(long[][] stateMatrix) {
+    // byte[] byteArray = new byte[200]; // Need 1,600 bits. 8 bits per byte.
 
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+    // ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
 
-        int byteArrayIndex = 0;
-        for (int x = 0; x < 5; x++) {
-            for (int y = 0; y < 5; y++) {
-                long lane = stateMatrix[x][y];
+    // int byteArrayIndex = 0;
+    // for (int x = 0; x < 5; x++) {
+    // for (int y = 0; y < 5; y++) {
+    // long lane = stateMatrix[x][y];
 
-                // Reset the buffer's position to zero before putting a new long value
-                buffer.clear();
-                buffer.putLong(lane);
-                buffer.flip(); // Prepare the buffer for reading
+    // // Reset the buffer's position to zero before putting a new long value
+    // buffer.clear();
+    // buffer.putLong(lane);
+    // buffer.flip(); // Prepare the buffer for reading
 
-                // Copy the bytes from the buffer to the byteArray array
-                byte[] destArray = new byte[Long.BYTES];
-                buffer.get(destArray);
-                System.arraycopy(destArray, 0, byteArray, byteArrayIndex, Long.BYTES);
-                byteArrayIndex += Long.BYTES;
-            }
-        }
+    // // Copy the bytes from the buffer to the byteArray array
+    // byte[] destArray = new byte[Long.BYTES];
+    // buffer.get(destArray);
+    // System.arraycopy(destArray, 0, byteArray, byteArrayIndex, Long.BYTES);
+    // byteArrayIndex += Long.BYTES;
+    // }
+    // }
 
-        return byteArray;
-    }
+    // return byteArray;
+    // }
+
+    // private long[][] byteArrayToStateMatrix(byte[] byteArray) {
+    // long[][] stateMatrix = new long[5][5];
+
+    // // real formula is: A[x, y, z] = S[w(5y + x) + z]
+
+    // for (int y = 0; y < 5; y++) {
+    // for (int x = 0; x < 5; x++) {
+    // for (int z = 0; z < 8; z++) {
+    // stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteArray[8 * (5 * y + x) + z];
+    // }
+    // }
+    // }
+
+    // return stateMatrix;
+    // }
 
     private long[][] byteArrayToStateMatrix(byte[] byteArray) {
         long[][] stateMatrix = new long[5][5];
+        ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.order(ByteOrder.LITTLE_ENDIAN); // Set to little-endian byte order
 
-        // real formula is: A[x, y, z] = S[w(5y + x) + z]
-
+        int byteIndex = 0;
         for (int y = 0; y < 5; y++) {
             for (int x = 0; x < 5; x++) {
-                for (int z = 0; z < 8; z++) {
-                    stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteArray[8 * (5 * y + x) + z];
+                buffer.clear();
+                // Copy 8 bytes into the buffer
+                for (int i = 0; i < 8; i++) {
+                    buffer.put(byteArray[byteIndex++]);
                 }
+                buffer.flip(); // Prepare for reading
+                stateMatrix[x][y] = buffer.getLong();
             }
         }
 
         return stateMatrix;
+    }
+
+    private byte[] stateMatrixToByteArray(long[][] stateMatrix) {
+        byte[] byteArray = new byte[200]; // 1600 bits = 200 bytes
+        ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.order(ByteOrder.LITTLE_ENDIAN); // Set to little-endian byte order
+
+        int byteIndex = 0;
+        for (int y = 0; y < 5; y++) {
+            for (int x = 0; x < 5; x++) {
+                buffer.clear();
+                buffer.putLong(stateMatrix[x][y]);
+                buffer.flip();
+                byte[] laneBytes = new byte[8];
+                buffer.get(laneBytes);
+                System.arraycopy(laneBytes, 0, byteArray, byteIndex, 8);
+                byteIndex += 8;
+            }
+        }
+
+        return byteArray;
     }
 
     public void printStateMatrix() {

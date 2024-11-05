@@ -2,11 +2,6 @@
 
 A SHA-3/SHAKE cryptographic library and a command line app to test the library. It can utilize all the cryptographic algorithms that fall under the category of symmetric. Uses specifications found in https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf.
 
-## BEFORE SUBMITTING
-
-- Remove test class
-- Make all non-required public methods private
-
 ## How to use
 
 Run Main.java in the command line with appropriate arguments to make use of the following services:
