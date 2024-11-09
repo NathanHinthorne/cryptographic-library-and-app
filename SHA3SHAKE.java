@@ -229,10 +229,10 @@ public class SHA3SHAKE {
         }
 
         if (!squeezed) {
-            finishAbsorb((byte) 0xF8, (byte) 0x01);
-        }
-
-        squeezed = true;
+            squeezed = true;
+            
+            finishAbsorb((byte) 0x1F, (byte) 0x80);
+        } 
 
         for (int i = 0; i < len; i += blockByteLength()) {
             byte[] block = stateMatrixToByteArray(stateMatrix);
@@ -277,10 +277,10 @@ public class SHA3SHAKE {
         }
 
         if (!digested) {
-            finishAbsorb((byte) 0x60, (byte) 0x01);
-        }
+            digested = true;
 
-        digested = true;
+            finishAbsorb((byte) 0x06, (byte) 0x80);
+        }
 
         byte[] block = stateMatrixToByteArray(stateMatrix);
         // System.arraycopy(block, 0, out, 0, d / 8);
@@ -335,8 +335,8 @@ public class SHA3SHAKE {
     private void finishAbsorb(byte padStart, byte padEnd) {
         byte[] p = new byte[input.length + (blockByteLength() - (input.length % blockByteLength()))];
         System.arraycopy(input, 0, p, 0, input.length);
-        // p[input.length] ^= padStart;
-        // p[p.length - 1] ^= padEnd;
+        p[input.length] ^= padStart;
+        p[p.length - 1] ^= padEnd;
 
         // byte[] p = applyPadding(input);
         byte[] s = new byte[WIDTH];
@@ -673,53 +673,12 @@ public class SHA3SHAKE {
         stateMatrix[0][0] ^= ROUND_CONSTANTS[round];
     }
 
-    private void executeRound(int round) {
-
-        if (round == 0) {
-            System.out.println("Round 0");
-            System.out.println("initial input: ");
-            printByteArray();
-            printStateMatrix();
-
-            stepMapTheta();
-            System.out.println("\n\nAfter Theta:");
-            System.out.println("expected: e9e9001d20e9001d20e9001d20e9001d20e9001d2");
-            System.out.println("got:");
-            printByteArray();
-            printStateMatrix();
-
-            stepMapRho();
-
-            stepMapPi();
-            // System.out.println("\n\nAfter Rho/Pi:");
-            // System.out.println(
-            // "expected:
-            // e9e9000000000000074800001d20000001d20000000000001d2001d2000e9000000003a4000000e9000000000003a4");
-            // System.out.println("got:");
-            // printByteArray();
-
-            stepMapChi();
-            // System.out.println("\n\nAfter Chi:");
-            // System.out.println(
-            // "expected:
-            // e9e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
-            // System.out.println("got:");
-            // printByteArray();
-
-            stepMapIota(round);
-            // System.out.println("\n\nAfter Iota:");
-            // System.out.println(
-            // "expected:
-            // e8e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
-            // System.out.println("got:");
-            // printByteArray();
-        } else {
-            stepMapTheta();
-            stepMapRho();
-            stepMapPi();
-            stepMapChi();
-            stepMapIota(round);
-        }
+    public void executeRound(int round) {
+        stepMapTheta();
+        stepMapRho();
+        stepMapPi();
+        stepMapChi();
+        stepMapIota(round);
     }
 
     private byte[] keccakP(int numRounds, byte[] byteArray) { // might not need to pass byteArray
