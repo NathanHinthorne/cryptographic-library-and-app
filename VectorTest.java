@@ -18,10 +18,43 @@ public class VectorTest {
     }
 
     public static void main(String[] args) {
-        System.out.println("SHA3-224 Test Vector Validation\n");
+        //defaults
+        String suffix = "224";
+        String msgType = "Short";
+        boolean printPassed = false;
+
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+                case "--passed":
+                    printPassed = true;
+                    break;
+                case "--suffix":
+                    if (++i < args.length) {
+                        suffix = args[i];
+                    } else {
+                        System.out.println("Suffix missing, using default (224).");
+                    }
+                    break;
+                case "--msgType":
+                    if (++i < args.length) {
+                        msgType = args[i];
+                    } else {
+                        System.out.println("Message type missing, using default (\"Short\").");
+                    }
+                    break;
+                case "--help":
+                    System.out.println("Usage: java VectorTest [--passed] [--suffix s] [--msgType t]\n"
+                        + "--passed: print all test cases, including ones that pass\n"
+                        + "--suffix s: the suffix of SHA3 (one of 224, 256, 384, or 512)\n"
+                        + "--msgType t: which variety of test vector to use (only 'Long' or 'Short' supported)");
+                    return;
+            }
+        }
+
+        System.out.printf("SHA3-%s Test Vector Validation\n\n", suffix);
 
         List<TestCase> testCases = new ArrayList<>();
-        String filename = "SHA3_224ShortMsg.txt"; // CHANGE THIS
+        String filename = "SHA3_" + suffix + msgType + "Msg.txt"; 
         String filepath = "sha-3bytetestvectors/" + filename;
 
         // Parse test vectors
@@ -69,33 +102,38 @@ public class VectorTest {
 
         for (int i = 0; i < testCases.size(); i++) {
             TestCase test = testCases.get(i);
-            System.out.println("\nTest Case " + (i + 1));
-            System.out.println("Input length: " + test.length + " bits");
-            System.out.println("Input message: " + test.message);
 
             // Convert hex string to byte array
-            byte[] message = hexStringToByteArray(test.message);
-
-            System.out.print("Input bytes: ");
-            for (byte b : message) {
-                System.out.printf("%02X ", b);
-            }
-            System.out.println();
+            byte[] message = hexStringToByteArray(test.message, test.length / 8);
 
             // Compute SHA3-224
-            byte[] output = SHA3SHAKE.SHA3(224, message, null);
+            byte[] output = SHA3SHAKE.SHA3(Integer.parseInt(suffix), message, null);
 
             // Convert output to hex string
             String hexResult = bytesToHexString(output);
 
-            System.out.println("Expected: " + test.expectedMD);
-            System.out.println("Got:      " + hexResult);
+            boolean passed = hexResult.equals(test.expectedMD);
+            if (passed) passCount++;
 
-            if (hexResult.equals(test.expectedMD)) {
-                System.out.println("Result: PASS");
-                passCount++;
-            } else {
-                System.out.println("Result: FAIL");
+            if (printPassed || !passed) {
+                System.out.println("\nTest Case " + (i + 1));
+                System.out.println("Input length: " + test.length + " bits");
+                System.out.println("Input message: " + test.message);
+    
+                System.out.print("Input bytes: ");
+                for (byte b : message) {
+                    System.out.printf("%02X ", b);
+                }
+                System.out.println();
+    
+                System.out.println("Expected: " + test.expectedMD);
+                System.out.println("Got:      " + hexResult);
+    
+                if (passed) {
+                    System.out.println("Result: PASS");
+                } else {
+                    System.out.println("Result: FAIL");
+                }
             }
         }
 
@@ -108,10 +146,10 @@ public class VectorTest {
         System.out.printf("Success Rate: %.2f%%\n", (passCount * 100.0 / totalTests));
     }
 
-    public static byte[] hexStringToByteArray(String hexString) {
+    public static byte[] hexStringToByteArray(String hexString, int arrLen) {
         int len = hexString.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
+        byte[] data = new byte[arrLen];
+        for (int i = 0; i < len && i / 2 < arrLen; i += 2) {
             data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
                     + Character.digit(hexString.charAt(i + 1), 16));
         }
