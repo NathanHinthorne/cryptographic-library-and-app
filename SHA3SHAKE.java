@@ -216,10 +216,10 @@ public class SHA3SHAKE {
         }
 
         if (!squeezed) {
-            finishAbsorb((byte) 0xF8, (byte) 0x01);
-        }
+            squeezed = true;
 
-        squeezed = true;
+            finishAbsorb((byte) 0x1F, (byte) 0x80);
+        }
 
         for (int i = 0; i < len; i += blockByteLength()) {
             byte[] block = stateMatrixToByteArray(stateMatrix);
@@ -264,10 +264,10 @@ public class SHA3SHAKE {
         }
 
         if (!digested) {
-            finishAbsorb((byte) 0x60, (byte) 0x01);
-        }
+            digested = true;
 
-        digested = true;
+            finishAbsorb((byte) 0x06, (byte) 0x80);
+        }
 
         byte[] block = stateMatrixToByteArray(stateMatrix);
 
@@ -519,7 +519,7 @@ public class SHA3SHAKE {
         stateMatrix[0][0] ^= ROUND_CONSTANTS[round];
     }
 
-    private void executeRound(int round) {
+    public void executeRound(int round) {
         stepMapTheta();
         stepMapRho();
         stepMapPi();
