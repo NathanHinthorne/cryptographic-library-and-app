@@ -5,10 +5,6 @@ import java.nio.ByteOrder;
  * The SHA3SHAKE class will enable users to securely hash data, extract hash
  * values, and customize the hashing process according to their specific
  * requirements.
- * 
- * Note: This implementaton of SHA3SHAKE uses booleans to represent bits. This
- * makes the code easier to read and understand, but results in slower
- * performance.
  */
 public class SHA3SHAKE {
 
@@ -43,11 +39,6 @@ public class SHA3SHAKE {
     private long[][] stateMatrix;
 
     /**
-     * The capacity of a KECCAK-p permutation in bits.
-     */
-    private int capacity;
-
-    /**
      * The rate of a KECCAK-p permutation in bits.
      */
     private int rate;
@@ -80,10 +71,6 @@ public class SHA3SHAKE {
      */
     private boolean initialized = false;
 
-    private boolean isSHA3 = false;
-
-    private boolean isSHAKE = false;
-
     public SHA3SHAKE() {
     }
 
@@ -112,7 +99,7 @@ public class SHA3SHAKE {
 
         // For SHA-3: capacity = 2 × output length
         // For SHAKE: capacity = 2 × security level
-        capacity = 2 * suffix;
+        int capacity = 2 * suffix;
 
         // The rate is what remains from the 1600 bits of state after subtracting
         // capacity
@@ -283,8 +270,7 @@ public class SHA3SHAKE {
         digested = true;
 
         byte[] block = stateMatrixToByteArray(stateMatrix);
-        // System.arraycopy(block, 0, out, 0, d / 8);
-        // write as for loop instead
+
         for (int i = 0; i < d / 8; i++) {
             out[i] = block[i];
         }
@@ -335,10 +321,9 @@ public class SHA3SHAKE {
     private void finishAbsorb(byte padStart, byte padEnd) {
         byte[] p = new byte[input.length + (blockByteLength() - (input.length % blockByteLength()))];
         System.arraycopy(input, 0, p, 0, input.length);
-        // p[input.length] ^= padStart;
-        // p[p.length - 1] ^= padEnd;
+        p[input.length] ^= padStart;
+        p[p.length - 1] ^= padEnd;
 
-        // byte[] p = applyPadding(input);
         byte[] s = new byte[WIDTH];
 
         for (int i = 0; i < p.length; i += blockByteLength()) {
@@ -351,190 +336,53 @@ public class SHA3SHAKE {
     }
 
     /**
-     * Implements the pad10*1 padding scheme as specified in the SHA3 standard.
-     * 
-     * @param m length of input in bits
-     * @return byte array containing the padding bits
-     */
-    private byte[] pad(int messageLength) {
-        // Calculate how many bits we need to pad
-        // We want the final length to be a multiple of rate
-        int remainingBits = rate - (messageLength % rate);
-
-        // We need at least 2 bits (for the starting 1 and ending 1)
-        // If we only have 1 bit left, we need to add another full block
-        if (remainingBits <= 1) {
-            remainingBits += rate;
-        }
-
-        // Convert to bytes (rounding up)
-        int paddingBytes = (remainingBits + 7) / 8;
-        byte[] padding = new byte[paddingBytes];
-
-        // Set first bit to 1 (in the first byte)
-        padding[0] = (byte) 0b10000000;
-
-        // Set last bit to 1 (in the last byte)
-        padding[paddingBytes - 1] |= 0b1;
-
-        return padding;
-    }
-
-    /**
-     * Applies the padding to a message and returns the padded result.
-     * 
-     * @param message the original message bytes
-     * @return the padded message
-     */
-    private byte[] applyPadding(byte[] message) {
-        int messageBitLength = message.length * 8;
-        byte[] padding = pad(messageBitLength);
-
-        // Combine message and padding
-        byte[] result = new byte[message.length + padding.length];
-        System.arraycopy(message, 0, result, 0, message.length);
-        System.arraycopy(padding, 0, result, message.length, padding.length);
-
-        return result;
-    }
-
-    /**
      * Flatten a 5x5 matrix of longs into a linear byte array.
      * 
      * @param stateMatrix 2D array of longs
      * @return byte array
      */
-    // private byte[] stateMatrixToByteArray(long[][] stateMatrix) {
-    // byte[] byteArray = new byte[200]; // Need 1,600 bits. 8 bits per byte.
-
-    // ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-
-    // int byteArrayIndex = 0;
-    // for (int x = 0; x < 5; x++) {
-    // for (int y = 0; y < 5; y++) {
-    // long lane = stateMatrix[x][y];
-
-    // // Reset the buffer's position to zero before putting a new long value
-    // buffer.clear();
-    // buffer.putLong(lane);
-    // buffer.flip(); // Prepare the buffer for reading
-
-    // // Copy the bytes from the buffer to the byteArray array
-    // byte[] destArray = new byte[Long.BYTES];
-    // buffer.get(destArray);
-    // System.arraycopy(destArray, 0, byteArray, byteArrayIndex, Long.BYTES);
-    // byteArrayIndex += Long.BYTES;
-    // }
-    // }
-
-    // return byteArray;
-    // }
-
-    // private long[][] byteArrayToStateMatrix(byte[] byteArray) {
-    // long[][] stateMatrix = new long[5][5];
-
-    // // real formula is: A[x, y, z] = S[w(5y + x) + z]
-
-    // for (int y = 0; y < 5; y++) {
-    // for (int x = 0; x < 5; x++) {
-    // for (int z = 0; z < 8; z++) {
-    // stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteArray[8 * (5 * y + x) + z];
-    // }
-    // }
-    // }
-
-    // return stateMatrix;
-    // }
-
-    private long[][] byteArrayToStateMatrix(byte[] byteArray) {
-        long[][] stateMatrix = new long[5][5];
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.order(ByteOrder.LITTLE_ENDIAN); // Set to little-endian byte order
-
-        int byteIndex = 0;
-        for (int y = 0; y < 5; y++) {
-            for (int x = 0; x < 5; x++) {
-                buffer.clear();
-                // Copy 8 bytes into the buffer
-                for (int i = 0; i < 8; i++) {
-                    buffer.put(byteArray[byteIndex++]);
-                }
-                buffer.flip(); // Prepare for reading
-                stateMatrix[x][y] = buffer.getLong();
-            }
-        }
-
-        return stateMatrix;
-    }
-
     private byte[] stateMatrixToByteArray(long[][] stateMatrix) {
-        byte[] byteArray = new byte[200]; // 1600 bits = 200 bytes
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        buffer.order(ByteOrder.LITTLE_ENDIAN); // Set to little-endian byte order
+        byte[] byteArray = new byte[200]; // Need 1,600 bits. 8 bits per byte.
 
-        int byteIndex = 0;
-        for (int y = 0; y < 5; y++) {
-            for (int x = 0; x < 5; x++) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        int byteArrayIndex = 0;
+        for (int x = 0; x < 5; x++) {
+            for (int y = 0; y < 5; y++) {
+                long lane = stateMatrix[y][x];
+
+                // Reset the buffer's position to zero before putting a new long value
                 buffer.clear();
-                buffer.putLong(stateMatrix[x][y]);
-                buffer.flip();
-                byte[] laneBytes = new byte[8];
-                buffer.get(laneBytes);
-                System.arraycopy(laneBytes, 0, byteArray, byteIndex, 8);
-                byteIndex += 8;
+                buffer.putLong(lane);
+                buffer.flip(); // Prepare the buffer for reading
+
+                // Copy the bytes from the buffer to the byteArray array
+                byte[] destArray = new byte[Long.BYTES];
+                buffer.get(destArray);
+                System.arraycopy(destArray, 0, byteArray, byteArrayIndex, Long.BYTES);
+                byteArrayIndex += Long.BYTES;
             }
         }
 
         return byteArray;
     }
 
-    public void printStateMatrix() {
-        // Print the state matrix for debugging purposes
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
-                // %016X is used in String.format to format the long value as a hexadecimal
-                // string with leading zeros to ensure it is represented as one long.
-                System.out.println("stateMatrix[" + i + "][" + j + "] = " + String.format("%016X", stateMatrix[i][j]));
+    private long[][] byteArrayToStateMatrix(byte[] byteArray) {
+        long[][] stateMatrix = new long[5][5];
+
+        // real formula is: A[x, y, z] = S[w(5y + x) + z]
+
+        for (int y = 0; y < 5; y++) {
+            for (int x = 0; x < 5; x++) {
+                for (int z = 0; z < 8; z++) {
+                    stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteArray[8 * (5 * y + x) + z] & 0xff;
+                }
             }
         }
+
+        return stateMatrix;
     }
-
-    public void printByteArray() {
-        String hexResult = "";
-        byte[] byteArray = stateMatrixToByteArray(stateMatrix);
-        for (byte b : byteArray) {
-            hexResult += String.format("%02X", b).toLowerCase();
-        }
-        System.out.println(hexResult);
-    }
-
-    /**
-     * Circular Right Shift. Preforms a circular right shift on a long value, while
-     * preserving the least significant bit and moving it to the most significant
-     * bit position.
-     * 
-     * @param value The long value to be shifted
-     * @return The shifted long value
-     */
-    private long circularRightShift(long value, int shiftAmount) {
-        long lane = value;
-        for (int i = 0; i < shiftAmount; i++) {
-            // Mask to isolate the least significant bit
-            long lastBit = lane & 1L;
-
-            // Shift right by 1
-            long remainingBits = lane >>> 1;
-
-            // Move the LSB to the MSB position and OR it with the shifted result
-            lane = remainingBits | (lastBit << 63);
-        }
-
-        return lane;
-    }
-
-    // private long circularLeftShift(long value, int shiftAmount) {
-    // return circularRightShift(value, 64 - shiftAmount);
-    // }
 
     private long circularLeftShift(long value, int offset) {
         return (value << offset) | (value >>> (64 - offset));
@@ -590,14 +438,12 @@ public class SHA3SHAKE {
      * for each lane.
      */
     private void stepMapRho() {
-        // Step 1: Keep A'[0, 0] the same as A[0, 0]
-        // stateMatrix[0][0] = stateMatrix[0][0];
 
-        // Step 2: Initialize (x, y) to (1, 0)
+        // Step 1: Initialize (x, y) to (1, 0)
         int x = 1;
         int y = 0;
 
-        // Step 3: Perform rotation 24 times
+        // Step 2: Perform rotation 24 times
         for (int t = 0; t < 24; t++) {
             int offset = ((t + 1) * (t + 2)) / 2; // Calculate offset
 
@@ -674,55 +520,14 @@ public class SHA3SHAKE {
     }
 
     private void executeRound(int round) {
-
-        if (round == 0) {
-            System.out.println("Round 0");
-            System.out.println("initial input: ");
-            printByteArray();
-            printStateMatrix();
-
-            stepMapTheta();
-            System.out.println("\n\nAfter Theta:");
-            System.out.println("expected: e9e9001d20e9001d20e9001d20e9001d20e9001d2");
-            System.out.println("got:");
-            printByteArray();
-            printStateMatrix();
-
-            stepMapRho();
-
-            stepMapPi();
-            // System.out.println("\n\nAfter Rho/Pi:");
-            // System.out.println(
-            // "expected:
-            // e9e9000000000000074800001d20000001d20000000000001d2001d2000e9000000003a4000000e9000000000003a4");
-            // System.out.println("got:");
-            // printByteArray();
-
-            stepMapChi();
-            // System.out.println("\n\nAfter Chi:");
-            // System.out.println(
-            // "expected:
-            // e9e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
-            // System.out.println("got:");
-            // printByteArray();
-
-            stepMapIota(round);
-            // System.out.println("\n\nAfter Iota:");
-            // System.out.println(
-            // "expected:
-            // e8e900000000000748000e9e90000074800001d20001d20000001d2000000000001d2000001d21d20001d3d20e9003a40003a400e900000000e900000000000e900000003a403a4");
-            // System.out.println("got:");
-            // printByteArray();
-        } else {
-            stepMapTheta();
-            stepMapRho();
-            stepMapPi();
-            stepMapChi();
-            stepMapIota(round);
-        }
+        stepMapTheta();
+        stepMapRho();
+        stepMapPi();
+        stepMapChi();
+        stepMapIota(round);
     }
 
-    private byte[] keccakP(int numRounds, byte[] byteArray) { // might not need to pass byteArray
+    private byte[] keccakP(int numRounds, byte[] byteArray) {
         stateMatrix = byteArrayToStateMatrix(byteArray);
 
         for (int round = 0; round < numRounds; round++) {
@@ -732,7 +537,7 @@ public class SHA3SHAKE {
         return stateMatrixToByteArray(stateMatrix);
     }
 
-    private byte[] keccakF(byte[] byteArray) { // might not need to pass byteArray
+    private byte[] keccakF(byte[] byteArray) {
         return keccakP(24, byteArray);
     }
 
@@ -765,7 +570,6 @@ public class SHA3SHAKE {
         }
 
         SHA3SHAKE sha3 = new SHA3SHAKE();
-        sha3.isSHA3 = true; // Set flag to indicate SHA-3
 
         sha3.init(suffix);
 
@@ -805,7 +609,6 @@ public class SHA3SHAKE {
         }
 
         SHA3SHAKE shake = new SHA3SHAKE();
-        shake.isSHAKE = true; // Set flag to indicate SHAKE
 
         shake.init(suffix);
 
