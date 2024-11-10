@@ -371,18 +371,38 @@ public class SHA3SHAKE {
     private long[][] byteArrayToStateMatrix(byte[] byteArray) {
         long[][] stateMatrix = new long[5][5];
 
-        // real formula is: A[x, y, z] = S[w(5y + x) + z]
-
-        for (int y = 0; y < 5; y++) {
-            for (int x = 0; x < 5; x++) {
-                for (int z = 0; z < 8; z++) {
-                    stateMatrix[x][y] = stateMatrix[x][y] << 8 ^ byteArray[8 * (5 * y + x) + z] & 0xff;
+        for (int x = 0; x < 5; x++) {
+                for (int y = 0; y < 5; y++) {
+                        for (int z = 0; z < 8; z++) {
+                                long nextByte = (long) byteArray[8 * (5 * y + x) + z] << 56;
+                                stateMatrix[x][y] = stateMatrix[x][y] >>> 8 ^ nextByte;
+                        }
                 }
-            }
         }
 
         return stateMatrix;
     }
+
+    // private long[][] byteArrayToStateMatrix(byte[] byteArray) {
+    //     long[][] stateMatrix = new long[5][5];
+    //     ByteBuffer buffer = ByteBuffer.allocate(8);
+    //     buffer.order(ByteOrder.LITTLE_ENDIAN); // Set to little-endian byte order
+
+    //     int byteIndex = 0;
+    //     for (int y = 0; y < 5; y++) {
+    //         for (int x = 0; x < 5; x++) {
+    //             buffer.clear();
+    //             // Copy 8 bytes into the buffer
+    //             for (int i = 0; i < 8; i++) {
+    //                 buffer.put(byteArray[byteIndex++]);
+    //             }
+    //             buffer.flip(); // Prepare for reading
+    //             stateMatrix[x][y] = buffer.getLong();
+    //         }
+    //     }
+
+    //     return stateMatrix;
+    // }
 
     private long circularLeftShift(long value, int offset) {
         return (value << offset) | (value >>> (64 - offset));
