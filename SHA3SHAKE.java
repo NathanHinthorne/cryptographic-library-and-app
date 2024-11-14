@@ -5,6 +5,10 @@ import java.nio.ByteOrder;
  * The SHA3SHAKE class will enable users to securely hash data, extract hash
  * values, and customize the hashing process according to their specific
  * requirements.
+ * 
+ * Some functionality is inspired by Markku-Juhani Saarinen's C implementation 
+ * of SHA-3 and SHAKE, found here: 
+ * https://github.com/mjosaarinen/tiny_sha3/blob/master/sha3.c.
  */
 public class SHA3SHAKE {
 
