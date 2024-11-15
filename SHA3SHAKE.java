@@ -361,7 +361,7 @@ public class SHA3SHAKE {
                 buffer.putLong(lane);
                 buffer.flip(); // Prepare the buffer for reading
 
-                // Copy the bytes from the buffer to the byteArray array
+                // Copy the bytes from the buffer to the byteArray
                 byte[] destArray = new byte[Long.BYTES];
                 buffer.get(destArray);
                 System.arraycopy(destArray, 0, byteArray, byteArrayIndex, Long.BYTES);
@@ -373,27 +373,29 @@ public class SHA3SHAKE {
     }
 
     /**
-     * Convert a byte array to a state matrix (a 2D array of longs). 
+     * Convert a byte array to a state matrix (a 2D array of longs).
      * 
      * @param byteArray the array to convert
      * @return the array in state matrix representation
      */
     private long[][] byteArrayToStateMatrix(byte[] byteArray) {
         long[][] stateMatrix = new long[5][5];
+        ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.order(ByteOrder.LITTLE_ENDIAN); // Set to little-endian byte order
 
         for (int x = 0; x < 5; x++) {
-                for (int y = 0; y < 5; y++) {
-                        for (int z = 0; z < 8; z++) {
-                                long nextByte = (long) byteArray[8 * (5 * y + x) + z] << 56;
-                                stateMatrix[x][y] = stateMatrix[x][y] >>> 8 ^ nextByte;
-                        }
+            for (int y = 0; y < 5; y++) {
+                for (int z = 0; z < 8; z++) {
+                    long nextByte = (long) byteArray[8 * (5 * y + x) + z] << 56;
+                    stateMatrix[x][y] = stateMatrix[x][y] >>> 8 ^ nextByte;
                 }
+            }
         }
 
         return stateMatrix;
     }
 
-    private long circularLeftShift(long value, int offset) {
+    public long circularLeftShift(long value, int offset) {
         return (value << offset) | (value >>> (64 - offset));
     }
 

@@ -1,5 +1,8 @@
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -9,7 +12,7 @@ public class Main {
     /**
      * A cryptographically secure random number generator.
      */
-    private static final SecureRandom random = new SecureRandom();
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     /**
      * Read a hex value from a string into a byte array.
@@ -32,7 +35,7 @@ public class Main {
         try (Scanner scanner = new Scanner(new File(inputPath));
                 PrintWriter writer = new PrintWriter(new File(outPath))) {
 
-            // byte[] data = parseHexString(scanner.useDelimiter("\\Z").next());
+            // byte[] data = parseHexString(scanner.useDelimiter("\Z").next());
             byte[] data = scanner.useDelimiter("\\Z").next().getBytes();
             byte[] hash = SHA3SHAKE.SHA3(securityLevel, data, null);
 
@@ -50,7 +53,7 @@ public class Main {
         try (Scanner dataScanner = new Scanner(new File(inputPath));
                 PrintWriter writer = new PrintWriter(new File(outPath))) {
 
-            // byte[] passphrase = passScanner.useDelimiter("\\Z").next().getBytes();
+            // byte[] passphrase = passScanner.useDelimiter("\Z").next().getBytes();
             byte[] passphraseBytes = passphrase.getBytes();
             byte[] data = dataScanner.useDelimiter("\\Z").next().getBytes();
 
@@ -69,18 +72,39 @@ public class Main {
 
     /**
      * Encrypt the input data using XOR with a key derived from the passphrase.
+     * 
+     * @throws IOException if an I/O error occurs
      */
     private static void encrypt(String inputPath, String outPath,
-            String passphrase) throws FileNotFoundException {
-        try (Scanner dataScanner = new Scanner(new File(inputPath));
-                PrintWriter writer = new PrintWriter(new File(outPath))) {
+            String passphrase) throws IOException {
+
+        // reads the raw bytes directly, preserving the exact data without any text
+        // interpretation.
+        try (FileInputStream fileInput = new FileInputStream(inputPath);
+                FileOutputStream fileOutput = new FileOutputStream(outPath)) {
 
             byte[] passphraseBytes = passphrase.getBytes();
-            byte[] data = dataScanner.useDelimiter("\\Z").next().getBytes();
+            byte[] data = fileInput.readAllBytes();
+
+            // debug
+            System.out.println("input data (as text): ");
+            for (byte b : data) {
+                char c = (char) b;
+                System.out.printf("%c", c);
+            }
+            System.out.println();
+            System.out.println();
+
+            System.out.println("input data: ");
+            for (byte b : data) {
+                System.out.printf("%x", b);
+            }
+            System.out.println();
+            System.out.println();
 
             byte[] key = SHA3SHAKE.SHAKE(128, passphraseBytes, 128, null);
             byte[] nonce = new byte[16];
-            random.nextBytes(nonce);
+            RANDOM.nextBytes(nonce);
 
             SHA3SHAKE sponge = new SHA3SHAKE();
             sponge.init(128);
@@ -92,28 +116,26 @@ public class Main {
                 data[i] ^= mask[i];
             }
 
-            for (byte b : data) {
-                writer.printf("%x", b);
-            }
-            writer.println();
-            for (byte b : nonce) {
-                writer.printf("%x", b);
-            }
+            fileOutput.write(nonce);
+            fileOutput.write(data);
         }
     }
 
     /**
      * Decrypt the input ciphertext using XOR with a key derived from the
      * passphrase.
+     * 
+     * @throws IOException
      */
     private static void decrypt(String inputPath, String outPath,
-            String passphrase) throws FileNotFoundException {
-        try (Scanner scanner = new Scanner(new File(inputPath));
-                PrintWriter writer = new PrintWriter(new File(outPath))) {
+            String passphrase) throws IOException {
+
+        try (FileInputStream fileInput = new FileInputStream(inputPath);
+                FileOutputStream fileOutput = new FileOutputStream(outPath)) {
 
             byte[] passphaseBytes = passphrase.getBytes();
-            byte[] ciphertext = parseHexString(scanner.nextLine());
-            byte[] nonce = parseHexString(scanner.nextLine());
+            byte[] nonce = fileInput.readNBytes(16);
+            byte[] ciphertext = fileInput.readAllBytes();
 
             byte[] key = SHA3SHAKE.SHAKE(128, passphaseBytes, 128, null);
 
@@ -127,11 +149,11 @@ public class Main {
                 ciphertext[i] ^= mask[i];
             }
 
-            writer.println(new String(ciphertext, StandardCharsets.UTF_8));
+            fileOutput.write(ciphertext);
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         String service = args[0];
 
         for (int i = 0; i < args.length; i++) {
