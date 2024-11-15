@@ -215,6 +215,9 @@ public class SHA3SHAKE {
      * @return the val buffer containing the desired hash value
      */
     public byte[] squeeze(byte[] out, int len) {
+        if (!initialized) {
+            throw new IllegalStateException("Sponge must be initialized before a squeeze() call.");
+        }
         if (digested) {
             throw new IllegalStateException("Cannot call squeeze() after digest().");
         }
@@ -263,6 +266,9 @@ public class SHA3SHAKE {
      * @return the val buffer containing the desired hash value
      */
     public byte[] digest(byte[] out) {
+        if (!initialized) {
+            throw new IllegalStateException("Sponge must be initialized before a digest() call.");
+        }
         if (squeezed) {
             throw new IllegalStateException("Cannot call digest() after squeeze().");
         }
@@ -395,7 +401,7 @@ public class SHA3SHAKE {
         return stateMatrix;
     }
 
-    public long circularLeftShift(long value, int offset) {
+    private long circularLeftShift(long value, int offset) {
         return (value << offset) | (value >>> (64 - offset));
     }
 
@@ -530,7 +536,7 @@ public class SHA3SHAKE {
         stateMatrix[0][0] ^= ROUND_CONSTANTS[round];
     }
 
-    public void executeRound(int round) {
+    private void executeRound(int round) {
         stepMapTheta();
         stepMapRho();
         stepMapPi();
