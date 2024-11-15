@@ -132,40 +132,116 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        if (args.length < 2) {
-            System.out.println("Insufficient arguments provided.");
-            return;
-        }
-
         String service = args[0];
-        String outPath = args[1];
+
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+                case "--help":
+                    switch (service) {
+                        case "hash":
+                            System.out.println(
+                                "Usage: \n\t java Main hash <input_file> <output_file> <security_level> [options]\n\n"
+                                + "Description: \n"
+                                + "\tHash the provided message.\n"
+                                + "\nArguments: \n"
+                                + "\tinput_file: Path to the input file.\n"
+                                + "\toutput_file: Path to the output file.\n"
+                                + "\tsecurity_level: One of 224, 256, 384, or 512. \n"
+                                + "\nOptions: \n"
+                                + "\t--help: Show help.\n"
+                            );
+                            return;
+                        case "mac":
+                            System.out.println(
+                                "Usage: \n\t java Main mac <input_file> <output_file> <passphrase> <security_level> <mac_length> [options]\n\n"
+                                + "Description: \n"
+                                + "\tCompute a MAC for the provided message.\n"
+                                + "\nArguments: \n"
+                                + "\tinput_file: Path to the input file.\n"
+                                + "\toutput_file: Path to the output file. \n"
+                                + "\tpassphrase: Passphrase to compute the MAC with. \n"
+                                + "\tsecurity_level: One of 224, 256, 384, or 512. \n"
+                                + "\tmac_length: Length of computed MAC; must be > 0.\n"
+                                + "\nOptions: \n"
+                                + "\t--help: Show help.\n"
+                            );
+                            return;
+                        case "encrypt":
+                            System.out.println(
+                                "Usage: \n\t java Main encrypt <input_file> <output_file> <passphrase> [options]\n\n"
+                                + "Description: \n"
+                                + "\tEncrypt the provided message.\n"
+                                + "\nArguments: \n"
+                                + "\tinput_file: Path to the input file.\n"
+                                + "\toutput_file: Path to the output file. \n"
+                                + "\tpassphrase: Passphrase to encrypt with. \n"
+                                + "\nOptions: \n"
+                                + "\t--help: Show help.\n"
+                            );
+                            return;
+                        case "decrypt":
+                            System.out.println(
+                                "Usage: \n\t java Main decrypt <input_file> <output_file> <passphrase> [options]\n\n"
+                                + "Description: \n"
+                                + "\tDecrypt the provided cryptogram.\n"
+                                + "\nArguments: \n"
+                                + "\tinput_file: Path to the input file/cryptogram.\n"
+                                + "\toutput_file: Path to the output file. \n"
+                                + "\tpassphrase: Passphrase to decrypt with. \n"
+                                + "\nOptions: \n"
+                                + "\t--help: Show help.\n"
+                            );
+                            return;
+                        default: 
+                            System.out.println(
+                                "Usage: \n\t java Main <command> [options]\n\n"
+                                + "Commands: \n"
+                                + "\thash: Compute the hash of a message.\n"
+                                + "\tmac: Compute the MAC for a message.\n"
+                                + "\tencrypt: Encrypt a message under a passphrase.\n"
+                                + "\tdecrypt: Decrypt a message under a passphrase.\n"
+                                + "\nGeneral Options: \n"
+                                + "\t--help: Show help.\n"
+                            );
+                            return;
+                    }   
+            }
+        }
 
         if (!isValidService(service)) {
             System.out.println("Invalid service: \"" + service +
                     "\". Must be one of hash, mac, encrypt, or decrypt.");
             return;
         }
+        
+        if (args.length < 3) {
+            System.out.println("Insufficient arguments provided.");
+            return;
+        }
+
+        String inPath = args[1];
+        String outPath = args[2];
 
         try {
             if (service.equals("hash")) {
                 if (args.length != 4) {
-                    System.out.println("Usage: hash <security_level> <output_file> <input_file>");
+                    System.out.println("Usage: hash <input_file> <output_file> <security_level>");
                     return;
                 }
-                int securityLevel = Integer.parseInt(args[1]);
+                int securityLevel = Integer.parseInt(args[3]);
                 if (!isValidSecurityLevel(securityLevel)) {
                     System.out.println("Invalid security level: \"" + securityLevel
                             + "\". Must be one of one of 224, 256, 384, or 512.");
                     return;
                 }
-                computeHash(args[3], outPath, securityLevel);
+                computeHash(inPath, outPath, securityLevel);
             } else if (service.equals("mac")) {
                 if (args.length != 6) {
                     System.out.println(
-                            "Usage: mac <security_level> <output_file> <input_file> <passphrase> <mac_length>");
+                            "Usage: mac <input_file> <output_file> <passphrase> <security_level> <mac_length> <mac_length>");
                     return;
                 }
-                int securityLevel = Integer.parseInt(args[1]);
+                int securityLevel = Integer.parseInt(args[4]);
                 if (!isValidSecurityLevel(securityLevel)) {
                     System.out.println("Invalid security level: \"" + securityLevel
                             + "\". Must be one of one of 224, 256, 384, or 512.");
@@ -178,19 +254,19 @@ public class Main {
                     return;
                 }
 
-                computeMAC(args[3], outPath, securityLevel, args[4], macLength);
+                computeMAC(inPath, outPath, securityLevel, args[3], macLength);
             } else if (service.equals("encrypt")) {
                 if (args.length != 4) {
-                    System.out.println("Usage: encrypt <output_file> <input_file> <passphrase>");
+                    System.out.println("Usage: encrypt <input_file> <output_file> <passphrase>");
                     return;
                 }
-                encrypt(args[2], outPath, args[3]);
+                encrypt(inPath, outPath, args[3]);
             } else if (service.equals("decrypt")) {
                 if (args.length != 4) {
-                    System.out.println("Usage: decrypt <output_file> <input_file> <passphrase>");
+                    System.out.println("Usage: decrypt <input_file> <output_file> <passphrase>");
                     return;
                 }
-                decrypt(args[2], outPath, args[3]);
+                decrypt(inPath, outPath, args[3]);
             }
         } catch (FileNotFoundException e) {
             System.out.println("File not found: " + e.getMessage());
