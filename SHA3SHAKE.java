@@ -225,7 +225,7 @@ public class SHA3SHAKE {
             finishAbsorb((byte) 0x1F, (byte) 0x80);
         }
 
-        for (int i = 0; i < len; i += blockByteLength()) {
+        for (int i = 0; i < len;) {
             byte[] block = stateMatrixToByteArray(stateMatrix);
             for (int j = 0; i < len && j < blockByteLength(); i++, j++) {
                 out[i] = block[j];
