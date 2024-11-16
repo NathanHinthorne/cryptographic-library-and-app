@@ -28,7 +28,6 @@ Notes:
 - All file paths should be valid and accessible
 - The same passphrase must be used for decryption as was used for encryption
 - Output will be written to the specified output file in each case
-- Hash and MAC outputs are written in hexadecimal format
 - For encryption, both the encrypted data and a nonce are written to the output file
 
 ## Understanding the algorithm
